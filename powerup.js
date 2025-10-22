@@ -13,6 +13,8 @@ export default class PowerUp {
         this.image = new Image();
         if (this.type === 'rapidFire') {
             this.image.src = 'rapid_fire.png';
+        } else if (this.type === 'bomb') {
+            this.image.src = 'bomb.png';
         }
         // Could add more types here with an else if or switch
     }

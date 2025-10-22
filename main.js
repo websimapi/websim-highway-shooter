@@ -15,18 +15,21 @@ window.addEventListener('load', () => {
     const restartButton = document.getElementById('restart-button');
     const finalScoreEl = document.getElementById('final-score');
     const scoreEl = document.getElementById('score');
+    const bombsEl = document.getElementById('bombs');
     const uiContainer = document.getElementById('ui-container');
     const powerupTimerEl = document.getElementById('powerup-timer');
 
     function startGame() {
         startScreen.style.display = 'none';
         gameOverScreen.style.display = 'none';
-        uiContainer.style.display = 'block';
+        uiContainer.style.display = 'flex';
         powerupTimerEl.style.display = 'none';
         updateScore(0);
+        updateBombCount(1); // Starting bombs
         game = new Game(canvas.width, canvas.height);
         game.onGameOver = showGameOver;
         game.onScoreUpdate = updateScore;
+        game.onBombUpdate = updateBombCount;
         game.onPowerUpUpdate = updatePowerupTimer;
         animate();
     }
@@ -53,6 +56,10 @@ window.addEventListener('load', () => {
 
     function updateScore(score) {
         scoreEl.textContent = `Score: ${score}`;
+    }
+
+    function updateBombCount(count) {
+        bombsEl.textContent = `Bombs: ${count}`;
     }
 
     function updatePowerupTimer(isActive, timeLeft) {

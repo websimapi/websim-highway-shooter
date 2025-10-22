@@ -28,6 +28,10 @@ h1 {
     margin-top: 0;
 }
 
+p {
+    margin: 10px 0;
+}
+
 button {
     padding: 10px 20px;
     font-size: 1.2em;
@@ -47,6 +51,19 @@ button {
     color: white;
     text-shadow: 2px 2px 4px #000000;
     z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#bombs {
+    margin-top: 10px;
+    font-size: 1em;
+    background-color: rgba(200, 50, 50, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    display: inline-block;
 }
 
 #powerup-timer {

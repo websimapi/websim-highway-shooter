@@ -19,6 +19,9 @@ export default class Player {
         this.rapidFireTimer = 0;
         this.rapidFireDuration = 5000; // 5 seconds
         
+        this.bombCount = 1;
+        this.maxBombs = 3;
+
         this.rotation = 0;
         this.maxRotation = 15 * (Math.PI / 180); // 15 degrees in radians
         this.rotationSpeed = 0.005; // Smoothing factor for rotation
@@ -108,6 +111,21 @@ export default class Player {
         const projectileY = weaponY; // From the top of the weapon
 
         this.game.addProjectile(new Projectile(this.game, projectileX, projectileY));
+    }
+
+    useBomb() {
+        if (this.bombCount > 0) {
+            this.bombCount--;
+            this.game.triggerBomb();
+            this.game.onBombUpdate(this.bombCount);
+        }
+    }
+
+    addBomb() {
+        if (this.bombCount < this.maxBombs) {
+            this.bombCount++;
+            this.game.onBombUpdate(this.bombCount);
+        }
     }
 
     activateRapidFire() {

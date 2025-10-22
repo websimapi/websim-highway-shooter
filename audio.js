@@ -21,6 +21,8 @@ export default class AudioPlayer {
         this.loadSound('hit', 'hit.mp3');
         this.loadSound('destroy', 'destroy.mp3');
         this.loadSound('shatter', 'shatter.mp3');
+        this.loadSound('bomb_explosion', 'bomb_explosion.mp3');
+        this.loadSound('bomb_pickup', 'bomb_pickup.mp3');
     }
 
     play(name) {

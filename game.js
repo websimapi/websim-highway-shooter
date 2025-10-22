@@ -9,6 +9,35 @@ import Enemy from 'enemy';
 import PowerUp from 'powerup';
 import { generateMask } from 'collisionMask';
 
+class BombExplosionEffect {
+    constructor(game, x, y) {
+        this.game = game;
+        this.x = x;
+        this.y = y;
+        this.radius = 0;
+        this.maxRadius = this.game.height / 2;
+        this.duration = 400; // ms
+        this.lifeTimer = 0;
+        this.active = true;
+    }
+
+    update(deltaTime) {
+        this.lifeTimer += deltaTime;
+        this.radius = (this.lifeTimer / this.duration) * this.maxRadius;
+        if (this.lifeTimer >= this.duration) {
+            this.active = false;
+        }
+    }
+
+    draw(context) {
+        const opacity = 1 - (this.lifeTimer / this.duration);
+        context.beginPath();
+        context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        context.fillStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
+        context.fill();
+    }
+}
+
 export default class Game {
     constructor(width, height) {
         this.width = width;
@@ -22,6 +51,7 @@ export default class Game {
         this.particles = [];
         this.enemies = [];
         this.powerups = [];
+        this.bombEffects = [];
         this.barrelTimer = 0;
         this.barrelInterval = 2000; // ms
         this.enemyTimer = 5000; // Time before first enemy cluster
@@ -31,6 +61,7 @@ export default class Game {
         this.onGameOver = () => {};
         this.onScoreUpdate = () => {};
         this.onPowerUpUpdate = () => {};
+        this.onBombUpdate = () => {};
         this.assetsLoaded = false;
         this.loadAssets();
     }
@@ -42,14 +73,16 @@ export default class Game {
             new Image(), // barrel
             new Image(), // enemy
             new Image(), // projectile
-            new Image(), // powerup
+            new Image(), // rapidfire powerup
             new Image(), // barrier
+            new Image(), // bomb powerup
         ];
         assetPromises[2].src = 'barrel.png';
         assetPromises[3].src = 'enemy.png';
         assetPromises[4].src = 'projectile.png';
         assetPromises[5].src = 'rapid_fire.png';
         assetPromises[6].src = 'barrier.png';
+        assetPromises[7].src = 'bomb.png';
 
         await Promise.all(assetPromises.map(img => new Promise(resolve => {
             if(img.complete) resolve();
@@ -65,6 +98,7 @@ export default class Game {
         generateMask(assetPromises[5]);
         // Barrier image might not need a mask if it's a simple rectangle, but good practice.
         generateMask(assetPromises[6]);
+        generateMask(assetPromises[7]);
 
         this.assetsLoaded = true;
     }
@@ -109,6 +143,10 @@ export default class Game {
         this.powerups = this.powerups.filter(p => p.active);
         this.powerups.forEach(p => p.update(deltaTime));
 
+        // Update bomb effects
+        this.bombEffects = this.bombEffects.filter(b => b.active);
+        this.bombEffects.forEach(b => b.update(deltaTime));
+
         // Collision detection
         this.projectiles.forEach(projectile => {
             this.barrels.forEach(barrel => {
@@ -120,7 +158,7 @@ export default class Game {
                         this.onScoreUpdate(this.score);
                         this.audio.play('destroy');
                         if (barrel.hasPowerUp) {
-                           this.spawnPowerUp(barrel.x + barrel.width / 2, barrel.y + barrel.height / 2, barrel.powerUpType);
+                           this.spawnPowerUp(barrel.x + barrel.width / 2, barrel.y + barrel.height / 2);
                         }
                     } else {
                         this.audio.play('hit');
@@ -138,7 +176,7 @@ export default class Game {
                         this.audio.play('shatter');
                         this.createShatterEffect(barrier);
                         if (barrier.hasPowerUp) {
-                            this.spawnPowerUp(barrier.x + barrier.width / 2, barrier.y + barrier.height / 2, barrier.powerUpType);
+                            this.spawnPowerUp(barrier.x + barrier.width / 2, barrier.y + barrier.height / 2);
                         }
                     } else {
                         this.audio.play('hit');
@@ -191,6 +229,9 @@ export default class Game {
                 powerup.active = false;
                 if(powerup.type === 'rapidFire') {
                     this.player.activateRapidFire();
+                } else if (powerup.type === 'bomb') {
+                    this.audio.play('bomb_pickup');
+                    this.player.addBomb();
                 }
             }
         });
@@ -210,6 +251,7 @@ export default class Game {
         this.enemies.forEach(e => e.draw(context));
         this.powerups.forEach(p => p.draw(context));
         this.particles.forEach(p => p.draw(context));
+        this.bombEffects.forEach(b => b.draw(context));
     }
 
     addProjectile(projectile) {
@@ -253,7 +295,8 @@ export default class Game {
         this.barriers.push(new Barrier(this, lane));
     }
 
-    spawnPowerUp(x, y, type) {
+    spawnPowerUp(x, y) {
+        const type = Math.random() < 0.5 ? 'rapidFire' : 'bomb';
         this.powerups.push(new PowerUp(this, x, y, type));
     }
 
@@ -269,6 +312,48 @@ export default class Game {
             const y = -100 - Math.random() * 300; // Stagger their vertical start
             this.enemies.push(new Enemy(this, x, y));
         }
+    }
+
+    triggerBomb() {
+        const playerX = this.player.x + this.player.width / 2;
+        const playerY = this.player.y + this.player.height / 2;
+        const radius = this.height / 2;
+        const radiusSq = radius * radius;
+
+        this.audio.play('bomb_explosion');
+        this.bombEffects.push(new BombExplosionEffect(this, playerX, playerY));
+
+        const checkAndDestroy = (object) => {
+            const objX = object.x + object.width / 2;
+            const objY = object.y + object.height / 2;
+            const dx = playerX - objX;
+            const dy = playerY - objY;
+            
+            if ((dx * dx + dy * dy) < radiusSq) {
+                if (object.active) {
+                    object.active = false;
+                    // Specific destruction logic
+                    if (object instanceof Barrel) {
+                         this.score += object.maxHealth;
+                         this.audio.play('destroy');
+                         if (object.hasPowerUp) this.spawnPowerUp(object.x, object.y);
+                    } else if (object instanceof Barrier) {
+                        this.score += object.maxHealth * 2;
+                        this.audio.play('shatter');
+                        this.createShatterEffect(object);
+                        if (object.hasPowerUp) this.spawnPowerUp(object.x, object.y);
+                    } else if (object instanceof Enemy) {
+                        this.score += object.maxHealth * 5;
+                        this.audio.play('destroy');
+                    }
+                }
+            }
+        };
+
+        this.barrels.forEach(checkAndDestroy);
+        this.barriers.forEach(checkAndDestroy);
+        this.enemies.forEach(checkAndDestroy);
+        this.onScoreUpdate(this.score);
     }
 
     createShatterEffect(source) {
