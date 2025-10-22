@@ -55,7 +55,9 @@ export default class ReplayRecorder {
                 y: p.y,
                 size: p.size,
                 color: p.color
-            }))
+            })),
+            score: this.game.score,
+            bombCount: this.game.player.bombCount
         };
 
         this.frames.push(frame);

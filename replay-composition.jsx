@@ -336,6 +336,56 @@ const ReplayComposition = ({ replayData }) => {
       lineNumber: 82,
       columnNumber: 13
     }),
+    /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: {
+      padding: "20px",
+      fontFamily: "Arial, sans-serif",
+      color: "white",
+      textShadow: "0 0 8px black",
+      zIndex: 20
+    }, children: [
+      /* @__PURE__ */ jsxDEV("div", { style: {
+        fontSize: 48,
+        fontWeight: "bold"
+      }, children: [
+        "Score: ",
+        frameData.score
+      ] }, void 0, true, {
+        fileName: "<stdin>",
+        lineNumber: 291,
+        columnNumber: 17
+      }),
+      /* @__PURE__ */ jsxDEV("div", { style: {
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: "10px"
+      }, children: Array.from({ length: frameData.bombCount }).map((_, i) => /* @__PURE__ */ jsxDEV(
+        Img,
+        {
+          src: replayData.assets.bomb,
+          style: {
+            width: 50,
+            height: 50,
+            marginRight: "8px"
+          }
+        },
+        `bomb-ui-${i}`,
+        false,
+        {
+          fileName: "<stdin>",
+          lineNumber: 304,
+          columnNumber: 25
+        }
+      )) }, void 0, false, {
+        fileName: "<stdin>",
+        lineNumber: 297,
+        columnNumber: 17
+      })
+    ] }, void 0, true, {
+      fileName: "<stdin>",
+      lineNumber: 284,
+      columnNumber: 13
+    }),
     /* @__PURE__ */ jsxDEV("div", { style: {
       position: "absolute",
       bottom: 20,
@@ -347,7 +397,7 @@ const ReplayComposition = ({ replayData }) => {
       textTransform: "uppercase"
     }, children: "Instant Replay" }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 284,
+      lineNumber: 318,
       columnNumber: 13
     })
   ] }, void 0, true, {
