@@ -1,6 +1,8 @@
 import Player from 'player';
 import InputHandler from 'input';
 import Barrel from 'barrel';
+import Barrier from 'barrier';
+import Particle from 'particle';
 import { checkCollision } from 'collision';
 import AudioPlayer from 'audio';
 import Enemy from 'enemy';
@@ -16,6 +18,8 @@ export default class Game {
         this.audio = new AudioPlayer();
         this.projectiles = [];
         this.barrels = [];
+        this.barriers = [];
+        this.particles = [];
         this.enemies = [];
         this.powerups = [];
         this.barrelTimer = 0;
@@ -39,11 +43,13 @@ export default class Game {
             new Image(), // enemy
             new Image(), // projectile
             new Image(), // powerup
+            new Image(), // barrier
         ];
         assetPromises[2].src = 'barrel.png';
         assetPromises[3].src = 'enemy.png';
         assetPromises[4].src = 'projectile.png';
         assetPromises[5].src = 'rapid_fire.png';
+        assetPromises[6].src = 'barrier.png';
 
         await Promise.all(assetPromises.map(img => new Promise(resolve => {
             if(img.complete) resolve();
@@ -57,6 +63,8 @@ export default class Game {
         generateMask(assetPromises[3]);
         generateMask(assetPromises[4]);
         generateMask(assetPromises[5]);
+        // Barrier image might not need a mask if it's a simple rectangle, but good practice.
+        generateMask(assetPromises[6]);
 
         this.assetsLoaded = true;
     }
@@ -70,9 +78,9 @@ export default class Game {
         this.projectiles = this.projectiles.filter(p => p.active);
         this.projectiles.forEach(p => p.update(deltaTime));
 
-        // Spawn and update barrels
+        // Spawn and update barrels/barriers
         if (this.barrelTimer > this.barrelInterval) {
-            this.spawnBarrelGroup();
+            this.spawnObstacleGroup();
             this.barrelTimer = 0;
             if(this.barrelInterval > 500) this.barrelInterval *= 0.99;
         } else {
@@ -80,6 +88,12 @@ export default class Game {
         }
         this.barrels = this.barrels.filter(b => b.active);
         this.barrels.forEach(b => b.update(deltaTime));
+
+        this.barriers = this.barriers.filter(b => b.active);
+        this.barriers.forEach(b => b.update(deltaTime));
+
+        this.particles = this.particles.filter(p => p.active);
+        this.particles.forEach(p => p.update(deltaTime));
 
         // Spawn and update enemies
         if (this.enemyTimer > this.enemyInterval) {
@@ -114,6 +128,21 @@ export default class Game {
                 }
             });
 
+            this.barriers.forEach(barrier => {
+                if (checkCollision(projectile, barrier)) {
+                    projectile.active = false;
+                    barrier.hit();
+                    if (!barrier.active) {
+                        this.score += barrier.maxHealth * 2;
+                        this.onScoreUpdate(this.score);
+                        this.audio.play('shatter');
+                        this.createShatterEffect(barrier);
+                    } else {
+                        this.audio.play('hit');
+                    }
+                }
+            });
+
             this.enemies.forEach(enemy => {
                  if (checkCollision(projectile, enemy)) {
                     projectile.active = false;
@@ -132,6 +161,14 @@ export default class Game {
         // Check for player collision with barrels
         this.barrels.forEach(barrel => {
             if (checkCollision(this.player, barrel)) {
+                this.gameOver = true;
+                this.onGameOver(this.score);
+            }
+        });
+
+        // Check for player collision with barriers
+        this.barriers.forEach(barrier => {
+            if (checkCollision(this.player, barrier)) {
                 this.gameOver = true;
                 this.onGameOver(this.score);
             }
@@ -166,13 +203,24 @@ export default class Game {
         this.player.draw(context);
         this.projectiles.forEach(p => p.draw(context));
         this.barrels.forEach(b => b.draw(context));
+        this.barriers.forEach(b => b.draw(context));
         this.enemies.forEach(e => e.draw(context));
         this.powerups.forEach(p => p.draw(context));
+        this.particles.forEach(p => p.draw(context));
     }
 
     addProjectile(projectile) {
         this.projectiles.push(projectile);
         this.audio.play('shoot');
+    }
+
+    spawnObstacleGroup() {
+        // 1 in 10 chance to spawn a barrier instead of barrels
+        if (Math.random() < 0.1) {
+            this.spawnBarrier();
+        } else {
+            this.spawnBarrelGroup();
+        }
     }
 
     spawnBarrelGroup() {
@@ -197,6 +245,11 @@ export default class Game {
         }
     }
 
+    spawnBarrier() {
+        const lane = Math.floor(Math.random() * 3);
+        this.barriers.push(new Barrier(this, lane));
+    }
+
     spawnPowerUp(x, y, type) {
         this.powerups.push(new PowerUp(this, x, y, type));
     }
@@ -212,6 +265,15 @@ export default class Game {
             const x = laneStartX + Math.random() * (laneWidth - this.player.width);
             const y = -100 - Math.random() * 300; // Stagger their vertical start
             this.enemies.push(new Enemy(this, x, y));
+        }
+    }
+
+    createShatterEffect(source) {
+        const PARTICLE_COUNT = 30;
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const x = source.x + Math.random() * source.width;
+            const y = source.y + Math.random() * source.height;
+            this.particles.push(new Particle(this, x, y));
         }
     }
     

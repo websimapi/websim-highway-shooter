@@ -20,6 +20,7 @@ export default class AudioPlayer {
         this.loadSound('shoot', 'shoot.mp3');
         this.loadSound('hit', 'hit.mp3');
         this.loadSound('destroy', 'destroy.mp3');
+        this.loadSound('shatter', 'shatter.mp3');
     }
 
     play(name) {
@@ -37,4 +38,3 @@ export default class AudioPlayer {
         }
     }
 }
-
