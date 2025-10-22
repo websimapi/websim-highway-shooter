@@ -10,8 +10,14 @@ export default class Player {
         this.weaponImage = new Image();
         this.weaponImage.src = 'weapon.png';
 
-        this.shootCooldown = 200; // ms
+        this.baseShootCooldown = 200; // ms
+        this.shootCooldown = this.baseShootCooldown;
         this.shootTimer = 0;
+        
+        // Power-up state
+        this.isRapidFireActive = false;
+        this.rapidFireTimer = 0;
+        this.rapidFireDuration = 5000; // 5 seconds
         
         this.rotation = 0;
         this.maxRotation = 15 * (Math.PI / 180); // 15 degrees in radians
@@ -58,6 +64,15 @@ export default class Player {
         } else {
             this.shootTimer += deltaTime;
         }
+        
+        // Update power-ups
+        if (this.isRapidFireActive) {
+            this.rapidFireTimer -= deltaTime;
+            this.game.onPowerUpUpdate(true, this.rapidFireTimer);
+            if (this.rapidFireTimer <= 0) {
+                this.deactivateRapidFire();
+            }
+        }
     }
 
     draw(context) {
@@ -93,5 +108,18 @@ export default class Player {
         const projectileY = weaponY; // From the top of the weapon
 
         this.game.addProjectile(new Projectile(this.game, projectileX, projectileY));
+    }
+
+    activateRapidFire() {
+        this.isRapidFireActive = true;
+        this.rapidFireTimer = this.rapidFireDuration;
+        this.shootCooldown = this.baseShootCooldown / 2; // Double the fire rate
+        this.game.onPowerUpUpdate(true, this.rapidFireTimer);
+    }
+
+    deactivateRapidFire() {
+        this.isRapidFireActive = false;
+        this.shootCooldown = this.baseShootCooldown;
+        this.game.onPowerUpUpdate(false, 0);
     }
 }

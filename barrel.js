@@ -20,6 +20,10 @@ export default class Barrel {
         this.active = true;
         this.rotation = 0; // Required for collision detection function
         
+        // Power-up logic
+        this.hasPowerUp = Math.random() < 0.1; // 10% chance
+        this.powerUpType = 'rapidFire'; // For now, only one type
+        
         this.image = new Image();
         this.image.src = 'barrel.png';
     }

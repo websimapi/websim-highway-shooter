@@ -16,6 +16,7 @@ window.addEventListener('load', () => {
     const finalScoreEl = document.getElementById('final-score');
     const scoreEl = document.getElementById('score');
     const uiContainer = document.getElementById('ui-container');
+    const powerupTimerEl = document.getElementById('powerup-timer');
 
     function startGame() {
         startScreen.style.display = 'none';
@@ -24,6 +25,7 @@ window.addEventListener('load', () => {
         game = new Game(canvas.width, canvas.height);
         game.onGameOver = showGameOver;
         game.onScoreUpdate = updateScore;
+        game.onPowerUpUpdate = updatePowerupTimer;
         animate();
     }
     
@@ -49,6 +51,15 @@ window.addEventListener('load', () => {
 
     function updateScore(score) {
         scoreEl.textContent = `Score: ${score}`;
+    }
+
+    function updatePowerupTimer(isActive, timeLeft) {
+        if (isActive) {
+            powerupTimerEl.style.display = 'inline-block';
+            powerupTimerEl.textContent = `Rapid Fire: ${(timeLeft / 1000).toFixed(1)}s`;
+        } else {
+            powerupTimerEl.style.display = 'none';
+        }
     }
 
     startButton.addEventListener('click', startGame);

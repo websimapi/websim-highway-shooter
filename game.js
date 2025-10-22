@@ -4,6 +4,7 @@ import Barrel from 'barrel';
 import { checkCollision } from 'collision';
 import AudioPlayer from 'audio';
 import Enemy from 'enemy';
+import PowerUp from 'powerup';
 import { generateMask } from 'collisionMask';
 
 export default class Game {
@@ -16,6 +17,7 @@ export default class Game {
         this.projectiles = [];
         this.barrels = [];
         this.enemies = [];
+        this.powerups = [];
         this.barrelTimer = 0;
         this.barrelInterval = 2000; // ms
         this.enemyTimer = 5000; // Time before first enemy cluster
@@ -24,6 +26,7 @@ export default class Game {
         this.score = 0;
         this.onGameOver = () => {};
         this.onScoreUpdate = () => {};
+        this.onPowerUpUpdate = () => {};
         this.assetsLoaded = false;
         this.loadAssets();
     }
@@ -35,10 +38,12 @@ export default class Game {
             new Image(), // barrel
             new Image(), // enemy
             new Image(), // projectile
+            new Image(), // powerup
         ];
         assetPromises[2].src = 'barrel.png';
         assetPromises[3].src = 'enemy.png';
         assetPromises[4].src = 'projectile.png';
+        assetPromises[5].src = 'rapid_fire.png';
 
         await Promise.all(assetPromises.map(img => new Promise(resolve => {
             if(img.complete) resolve();
@@ -51,6 +56,7 @@ export default class Game {
         generateMask(assetPromises[2]);
         generateMask(assetPromises[3]);
         generateMask(assetPromises[4]);
+        generateMask(assetPromises[5]);
 
         this.assetsLoaded = true;
     }
@@ -85,6 +91,10 @@ export default class Game {
         this.enemies = this.enemies.filter(e => e.active);
         this.enemies.forEach(e => e.update(deltaTime));
 
+        // Spawn and update powerups
+        this.powerups = this.powerups.filter(p => p.active);
+        this.powerups.forEach(p => p.update(deltaTime));
+
         // Collision detection
         this.projectiles.forEach(projectile => {
             this.barrels.forEach(barrel => {
@@ -95,6 +105,9 @@ export default class Game {
                         this.score += barrel.maxHealth;
                         this.onScoreUpdate(this.score);
                         this.audio.play('destroy');
+                        if (barrel.hasPowerUp) {
+                           this.spawnPowerUp(barrel.x + barrel.width / 2, barrel.y + barrel.height / 2, barrel.powerUpType);
+                        }
                     } else {
                         this.audio.play('hit');
                     }
@@ -131,6 +144,16 @@ export default class Game {
                 this.onGameOver(this.score);
             }
         });
+
+        // Check for player collision with powerups
+        this.powerups.forEach(powerup => {
+            if (checkCollision(this.player, powerup)) {
+                powerup.active = false;
+                if(powerup.type === 'rapidFire') {
+                    this.player.activateRapidFire();
+                }
+            }
+        });
     }
 
     draw(context) {
@@ -144,6 +167,7 @@ export default class Game {
         this.projectiles.forEach(p => p.draw(context));
         this.barrels.forEach(b => b.draw(context));
         this.enemies.forEach(e => e.draw(context));
+        this.powerups.forEach(p => p.draw(context));
     }
 
     addProjectile(projectile) {
@@ -171,6 +195,10 @@ export default class Game {
         for (const subLane of selectedSubLanes) {
             this.barrels.push(new Barrel(this, lane, subLane, yOffset, speed));
         }
+    }
+
+    spawnPowerUp(x, y, type) {
+        this.powerups.push(new PowerUp(this, x, y, type));
     }
 
     spawnEnemyCluster() {
