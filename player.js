@@ -5,8 +5,10 @@ export default class Player {
         this.game = game;
         this.resize();
         this.speed = 0.5; // pixels per ms
-        this.image = new Image();
-        this.image.src = 'player_ship.png';
+        this.motorcycleImage = new Image();
+        this.motorcycleImage.src = 'player_ship.png';
+        this.weaponImage = new Image();
+        this.weaponImage.src = 'weapon.png';
 
         this.shootCooldown = 200; // ms
         this.shootTimer = 0;
@@ -43,7 +45,14 @@ export default class Player {
     }
 
     draw(context) {
-        context.drawImage(this.image, this.x, this.y, this.width, this.height);
+        context.drawImage(this.motorcycleImage, this.x, this.y, this.width, this.height);
+        
+        const weaponWidth = this.width * 0.8;
+        const weaponHeight = this.height * 0.8;
+        const weaponX = this.x + (this.width - weaponWidth) / 2;
+        const weaponY = this.y - weaponHeight * 0.1;
+
+        context.drawImage(this.weaponImage, weaponX, weaponY, weaponWidth, weaponHeight);
     }
 
     shoot() {
@@ -52,4 +61,3 @@ export default class Player {
         this.game.addProjectile(new Projectile(this.game, projectileX, projectileY));
     }
 }
-
