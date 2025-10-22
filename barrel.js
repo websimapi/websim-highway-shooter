@@ -1,14 +1,19 @@
 export default class Barrel {
-    constructor(game, lane, yOffset = 0, speed = null) {
+    constructor(game, lane, subLane, yOffset = 0, speed = null) {
         this.game = game;
-        // Make barrels smaller to fit in a row.
-        this.width = Math.min(this.game.width * 0.25, 80);
+
+        const laneWidth = this.game.width / 3;
+        const subLaneWidth = laneWidth / 3;
+
+        // Make barrels smaller to fit 3 in a lane.
+        this.width = subLaneWidth * 0.85;
         this.height = this.width;
         
-        const laneWidth = this.game.width / 3;
-        this.x = (lane * laneWidth) + (laneWidth / 2) - (this.width / 2);
+        const laneStartX = lane * laneWidth;
         
-        this.y = yOffset - this.height;
+        this.x = laneStartX + (subLane * subLaneWidth) + (subLaneWidth / 2) - (this.width / 2);
+        
+        this.y = yOffset; // Start at the given yOffset
         this.speedY = speed !== null ? speed : Math.random() * 0.1 + 0.1;
         this.maxHealth = Math.floor(Math.random() * 5) + 1;
         this.health = this.maxHealth;
