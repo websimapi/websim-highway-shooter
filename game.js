@@ -3,6 +3,7 @@ import InputHandler from './input.js';
 import Barrel from './barrel.js';
 import { checkCollision } from './collision.js';
 import AudioPlayer from './audio.js';
+import Enemy from './enemy.js';
 
 export default class Game {
     constructor(width, height) {
@@ -13,8 +14,11 @@ export default class Game {
         this.audio = new AudioPlayer();
         this.projectiles = [];
         this.barrels = [];
+        this.enemies = [];
         this.barrelTimer = 0;
         this.barrelInterval = 2000; // ms
+        this.enemyTimer = 5000; // Time before first enemy cluster
+        this.enemyInterval = 12000; // Time between enemy clusters
         this.gameOver = false;
         this.score = 0;
         this.onGameOver = () => {};
@@ -41,6 +45,16 @@ export default class Game {
         this.barrels = this.barrels.filter(b => b.active);
         this.barrels.forEach(b => b.update(deltaTime));
 
+        // Spawn and update enemies
+        if (this.enemyTimer > this.enemyInterval) {
+            this.spawnEnemyCluster();
+            this.enemyTimer = 0;
+        } else {
+            this.enemyTimer += deltaTime;
+        }
+        this.enemies = this.enemies.filter(e => e.active);
+        this.enemies.forEach(e => e.update(deltaTime));
+
         // Collision detection
         this.projectiles.forEach(projectile => {
             this.barrels.forEach(barrel => {
@@ -49,6 +63,20 @@ export default class Game {
                     barrel.hit();
                     if(!barrel.active) {
                         this.score += barrel.maxHealth;
+                        this.onScoreUpdate(this.score);
+                        this.audio.play('destroy');
+                    } else {
+                        this.audio.play('hit');
+                    }
+                }
+            });
+
+            this.enemies.forEach(enemy => {
+                 if (checkCollision(projectile, enemy)) {
+                    projectile.active = false;
+                    enemy.hit();
+                    if(!enemy.active) {
+                        this.score += enemy.maxHealth * 5; // Enemies are worth more
                         this.onScoreUpdate(this.score);
                         this.audio.play('destroy');
                     } else {
@@ -65,6 +93,14 @@ export default class Game {
                 this.onGameOver(this.score);
             }
         });
+
+        // Check for player collision with enemies
+        this.enemies.forEach(enemy => {
+            if (checkCollision(this.player, enemy)) {
+                this.gameOver = true;
+                this.onGameOver(this.score);
+            }
+        });
     }
 
     draw(context) {
@@ -77,6 +113,7 @@ export default class Game {
         this.player.draw(context);
         this.projectiles.forEach(p => p.draw(context));
         this.barrels.forEach(b => b.draw(context));
+        this.enemies.forEach(e => e.draw(context));
     }
 
     addProjectile(projectile) {
@@ -103,6 +140,20 @@ export default class Game {
 
         for (const subLane of selectedSubLanes) {
             this.barrels.push(new Barrel(this, lane, subLane, yOffset, speed));
+        }
+    }
+
+    spawnEnemyCluster() {
+        const CLUSTER_SIZE = 20;
+        const lane = Math.floor(Math.random() * 3);
+        const laneWidth = this.width / 3;
+        const laneStartX = lane * laneWidth;
+
+        for (let i = 0; i < CLUSTER_SIZE; i++) {
+            // Spawn in a random position within the chosen lane, off-screen
+            const x = laneStartX + Math.random() * (laneWidth - this.player.width);
+            const y = -100 - Math.random() * 300; // Stagger their vertical start
+            this.enemies.push(new Enemy(this, x, y));
         }
     }
     
