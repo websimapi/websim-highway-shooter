@@ -56,8 +56,15 @@ export default class Player {
     }
 
     shoot() {
-        const projectileX = this.x + this.width / 2 - 5;
-        const projectileY = this.y;
+        const weaponWidth = this.width * 0.8;
+        const weaponHeight = this.height * 0.8;
+        const weaponX = this.x + (this.width - weaponWidth) / 2;
+        const weaponY = this.y - weaponHeight * 0.1;
+
+        const projectileWidth = 10; // from projectile.js
+        const projectileX = weaponX + (weaponWidth / 2) - (projectileWidth / 2);
+        const projectileY = weaponY; // From the top of the weapon
+
         this.game.addProjectile(new Projectile(this.game, projectileX, projectileY));
     }
 }
