@@ -75,39 +75,8 @@ export default class Enemy {
             moveY = (dy / distance) * this.speed * deltaTime;
         }
         
-        const nextPos = {
-            x: this.x + moveX,
-            y: this.y + moveY,
-            width: this.width,
-            height: this.height,
-            image: this.image, // Pass image for collision check
-            rotation: this.rotation
-        };
-        
-        // --- Collision with Barrels ---
-        let blocked = false;
-        for (const barrel of this.game.barrels) {
-            if (checkCollision(nextPos, barrel)) {
-                blocked = true;
-                break;
-            }
-        }
-        
-        if (!blocked) {
-            this.x = nextPos.x;
-            this.y = nextPos.y;
-        } else {
-             // If path is blocked, try to slide horizontally.
-            const horizontalPos = { ...nextPos, y: this.y };
-            let horizBlocked = false;
-             for (const barrel of this.game.barrels) {
-                if (checkCollision(horizontalPos, barrel)) {
-                    horizBlocked = true;
-                    break;
-                }
-            }
-            if(!horizBlocked) this.x = horizontalPos.x;
-        }
+        this.x += moveX;
+        this.y += moveY;
 
         // --- Interaction with Barriers ---
         for (const barrier of this.game.barriers) {
