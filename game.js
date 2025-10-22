@@ -85,16 +85,23 @@ export default class Game {
     }
 
     spawnBarrelGroup() {
-        const lane = Math.floor(Math.random() * 3);
-        const count = Math.floor(Math.random() * 3) + 1; // 1 to 3 barrels
-        const spacing = 10; // Vertical space between barrels
-        const speed = Math.random() * 0.1 + 0.1; // Common speed for the group
-        
-        const barrelWidth = Math.min(this.width * 0.2, 100);
+        const count = Math.floor(Math.random() * 3) + 1; // 1 to 3 barrels in a row
+        const lanes = [0, 1, 2];
 
-        for (let i = 0; i < count; i++) {
-            const yOffset = -i * (barrelWidth + spacing);
-            this.barrels.push(new Barrel(this, lane, yOffset, speed));
+        // Shuffle lanes array to pick random lanes
+        for (let i = lanes.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [lanes[i], lanes[j]] = [lanes[j], lanes[i]];
+        }
+
+        const selectedLanes = lanes.slice(0, count);
+
+        const yOffset = 0; // All barrels in a row start at the same Y
+        const speed = Math.random() * 0.1 + 0.1; // Common speed for the group
+
+        for (const lane of selectedLanes) {
+            // Use a negative yOffset to ensure barrels spawn off-screen from the top
+            this.barrels.push(new Barrel(this, lane, -100, speed));
         }
     }
     

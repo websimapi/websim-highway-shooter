@@ -1,7 +1,8 @@
 export default class Barrel {
     constructor(game, lane, yOffset = 0, speed = null) {
         this.game = game;
-        this.width = Math.min(this.game.width * 0.2, 100);
+        // Make barrels smaller to fit in a row.
+        this.width = Math.min(this.game.width * 0.25, 80);
         this.height = this.width;
         
         const laneWidth = this.game.width / 3;
