@@ -32,7 +32,7 @@ export default class Game {
 
         // Spawn and update barrels
         if (this.barrelTimer > this.barrelInterval) {
-            this.addBarrel();
+            this.spawnBarrelGroup();
             this.barrelTimer = 0;
             if(this.barrelInterval > 500) this.barrelInterval *= 0.99;
         } else {
@@ -84,8 +84,18 @@ export default class Game {
         this.audio.play('shoot');
     }
 
-    addBarrel() {
-        this.barrels.push(new Barrel(this));
+    spawnBarrelGroup() {
+        const lane = Math.floor(Math.random() * 3);
+        const count = Math.floor(Math.random() * 3) + 1; // 1 to 3 barrels
+        const spacing = 10; // Vertical space between barrels
+        const speed = Math.random() * 0.1 + 0.1; // Common speed for the group
+        
+        const barrelWidth = Math.min(this.width * 0.2, 100);
+
+        for (let i = 0; i < count; i++) {
+            const yOffset = -i * (barrelWidth + spacing);
+            this.barrels.push(new Barrel(this, lane, yOffset, speed));
+        }
     }
     
     resize(width, height) {
@@ -94,4 +104,3 @@ export default class Game {
         this.player.resize();
     }
 }
-

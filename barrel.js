@@ -1,15 +1,14 @@
 export default class Barrel {
-    constructor(game) {
+    constructor(game, lane, yOffset = 0, speed = null) {
         this.game = game;
         this.width = Math.min(this.game.width * 0.2, 100);
         this.height = this.width;
         
-        const lane = Math.floor(Math.random() * 3); // 0, 1, or 2
         const laneWidth = this.game.width / 3;
         this.x = (lane * laneWidth) + (laneWidth / 2) - (this.width / 2);
         
-        this.y = -this.height;
-        this.speedY = Math.random() * 0.1 + 0.1;
+        this.y = yOffset - this.height;
+        this.speedY = speed !== null ? speed : Math.random() * 0.1 + 0.1;
         this.maxHealth = Math.floor(Math.random() * 5) + 1;
         this.health = this.maxHealth;
         this.active = true;
@@ -43,4 +42,3 @@ export default class Barrel {
         }
     }
 }
-
