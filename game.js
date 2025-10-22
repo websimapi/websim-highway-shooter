@@ -137,6 +137,9 @@ export default class Game {
                         this.onScoreUpdate(this.score);
                         this.audio.play('shatter');
                         this.createShatterEffect(barrier);
+                        if (barrier.hasPowerUp) {
+                            this.spawnPowerUp(barrier.x + barrier.width / 2, barrier.y + barrier.height / 2, barrier.powerUpType);
+                        }
                     } else {
                         this.audio.play('hit');
                     }

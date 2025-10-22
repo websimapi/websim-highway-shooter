@@ -17,6 +17,10 @@ export default class Barrier {
         this.active = true;
         this.rotation = 0;
         
+        // Power-up logic
+        this.hasPowerUp = Math.random() < 0.5; // 50% chance
+        this.powerUpType = 'rapidFire';
+        
         this.image = new Image();
         this.image.src = 'barrier.png';
     }
@@ -53,4 +57,3 @@ export default class Barrier {
         }
     }
 }
-
