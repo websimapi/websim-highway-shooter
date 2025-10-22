@@ -9,7 +9,7 @@ export default class InputHandler {
         
         this.touchStartX = 0;
         this.touchStartY = 0;
-        this.tapThreshold = 15; // Max pixels moved to be considered a tap. Increased for mobile friendliness.
+        this.tapThreshold = 10; // Max pixels moved to be considered a tap
 
         // Keyboard controls
         window.addEventListener('keydown', (e) => {
@@ -36,7 +36,6 @@ export default class InputHandler {
             this.touchStartX = getEventX(e);
             this.touchStartY = getEventY(e);
             this.playerStartX = this.game.player.x;
-            this.game.audio.resumeContext(); // Resume audio on first interaction
         };
 
         const handleDragMove = (e) => {

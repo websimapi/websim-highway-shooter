@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 export default class Barrier {
     constructor(game, lane) {
         this.game = game;
@@ -21,8 +23,29 @@ export default class Barrier {
         this.hasPowerUp = Math.random() < 0.5; // 50% chance
         this.powerUpType = 'rapidFire';
         
-        this.image = new Image();
-        this.image.src = 'barrier.png';
+        this.image = this.game.assets.barrierImage;
+
+        // Three.js setup
+        const geometry = new THREE.PlaneGeometry(this.width, this.height);
+        const material = new THREE.MeshBasicMaterial({ map: this.game.assets.barrierTexture, transparent: true });
+        this.mesh = new THREE.Mesh(geometry, material);
+
+        this.game.scene.add(this.mesh);
+
+        // Health text - using canvas texture
+        this.textCanvas = document.createElement('canvas');
+        this.textCanvas.width = 256;
+        this.textCanvas.height = 128;
+        this.textContext = this.textCanvas.getContext('2d');
+        this.textTexture = new THREE.CanvasTexture(this.textCanvas);
+
+        const textMaterial = new THREE.MeshBasicMaterial({ map: this.textTexture, transparent: true });
+        const textGeometry = new THREE.PlaneGeometry(this.height * 1.5, this.height * 0.75);
+        this.textMesh = new THREE.Mesh(textGeometry, textMaterial);
+        this.textMesh.position.z = 0.1; // In front of barrier
+        this.mesh.add(this.textMesh);
+
+        this.updateHealthText();
     }
 
     update(deltaTime) {
@@ -30,30 +53,55 @@ export default class Barrier {
         if (this.y > this.game.height) {
             this.active = false;
         }
+
+        // Sync 3D position
+        this.mesh.position.set(
+            this.x + this.width / 2 - this.game.width / 2,
+            -this.y - this.height / 2 + this.game.height / 2,
+            0
+        );
     }
 
     draw(context) {
-        if (!this.image.complete || this.image.naturalWidth === 0) return;
-        context.drawImage(this.image, this.x, this.y, this.width, this.height);
-        
-        context.fillStyle = 'white';
-        context.font = `bold ${this.height * 0.7}px Arial`;
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-        context.strokeStyle = 'black';
-        context.lineWidth = 4;
+        // Drawing is now handled by Three.js main loop
+    }
 
-        const textX = this.x + this.width / 2;
-        const textY = this.y + this.height / 2;
+    updateHealthText() {
+        const ctx = this.textContext;
+        ctx.clearRect(0, 0, this.textCanvas.width, this.textCanvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = `bold ${this.textCanvas.height * 0.8}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 12;
+
+        const textX = this.textCanvas.width / 2;
+        const textY = this.textCanvas.height / 2;
         
-        context.strokeText(this.health, textX, textY);
-        context.fillText(this.health, textX, textY);
+        ctx.strokeText(this.health, textX, textY);
+        ctx.fillText(this.health, textX, textY);
+        this.textTexture.needsUpdate = true;
     }
 
     hit() {
         this.health--;
         if (this.health <= 0) {
             this.active = false;
+        } else {
+            this.updateHealthText();
+        }
+    }
+
+    destroy() {
+        if (this.mesh) {
+            this.game.scene.remove(this.mesh);
+            this.mesh.geometry.dispose();
+            this.mesh.material.dispose();
+            this.textMesh.geometry.dispose();
+            this.textMesh.material.dispose();
+            this.textTexture.dispose();
+            this.mesh = null;
         }
     }
 }

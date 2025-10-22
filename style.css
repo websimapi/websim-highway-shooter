@@ -9,7 +9,8 @@ body {
 
 canvas {
     display: block;
-    background-color: #333;
+    /* background-color: #333; */ /* This will be controlled by Three.js now */
+    background: #283747; /* Dark blue-grey road color */
 }
 
 #start-screen, #game-over-screen {
@@ -26,10 +27,6 @@ canvas {
 
 h1 {
     margin-top: 0;
-}
-
-p {
-    margin: 10px 0;
 }
 
 button {

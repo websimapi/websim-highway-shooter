@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import Player from 'player';
 import InputHandler from 'input';
 import Barrel from 'barrel';
@@ -7,7 +9,7 @@ import { checkCollision } from 'collision';
 import AudioPlayer from 'audio';
 import Enemy from 'enemy';
 import PowerUp from 'powerup';
-import { generateMask } from 'collisionMask';
+import { generateMask } from './collisionMask.js';
 
 class BombExplosionEffect {
     constructor(game, x, y) {
@@ -19,29 +21,67 @@ class BombExplosionEffect {
         this.duration = 400; // ms
         this.lifeTimer = 0;
         this.active = true;
+
+        const geometry = new THREE.RingGeometry(0, this.maxRadius, 64);
+        const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.position.set(x - game.width / 2, -y + game.height / 2, 5);
+        this.game.scene.add(this.mesh);
     }
 
     update(deltaTime) {
         this.lifeTimer += deltaTime;
-        this.radius = (this.lifeTimer / this.duration) * this.maxRadius;
+        const progress = this.lifeTimer / this.duration;
+        const currentRadius = progress * this.maxRadius;
+        
+        this.mesh.scale.set(progress, progress, 1);
+        this.mesh.material.opacity = (1 - progress) * 0.5;
+        
         if (this.lifeTimer >= this.duration) {
             this.active = false;
         }
     }
 
     draw(context) {
-        const opacity = 1 - (this.lifeTimer / this.duration);
-        context.beginPath();
-        context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        context.fillStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
-        context.fill();
+        // handled by three.js
+    }
+
+    destroy() {
+        if (this.mesh) {
+            this.game.scene.remove(this.mesh);
+            this.mesh.geometry.dispose();
+            this.mesh.material.dispose();
+            this.mesh = null;
+        }
     }
 }
 
 export default class Game {
-    constructor(width, height) {
+    constructor(width, height, canvas) {
         this.width = width;
         this.height = height;
+
+        // --- Three.js Setup ---
+        this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        this.renderer.setSize(width, height);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        this.scene = new THREE.Scene();
+        
+        const cameraDistance = 1000;
+        const fov = 2 * Math.atan((height / 2) / cameraDistance) * (180 / Math.PI);
+        this.camera = new THREE.PerspectiveCamera(fov, width / height, 0.1, 2000);
+        this.camera.position.set(0, 0, cameraDistance);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        this.scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(-1, 1, 1);
+        this.scene.add(directionalLight);
+
+        this.assets = {};
+        this.assetsLoaded = false;
+
         this.player = new Player(this);
         this.input = new InputHandler(this);
         this.audio = new AudioPlayer();
@@ -62,45 +102,77 @@ export default class Game {
         this.onScoreUpdate = () => {};
         this.onPowerUpUpdate = () => {};
         this.onBombUpdate = () => {};
-        this.assetsLoaded = false;
         this.loadAssets();
+        this.createBackground();
     }
 
-    async loadAssets() {
-        const assetPromises = [
-            this.player.motorcycleImage,
-            this.player.weaponImage,
-            new Image(), // barrel
-            new Image(), // enemy
-            new Image(), // projectile
-            new Image(), // rapidfire powerup
-            new Image(), // barrier
-            new Image(), // bomb powerup
-        ];
-        assetPromises[2].src = 'barrel.png';
-        assetPromises[3].src = 'enemy.png';
-        assetPromises[4].src = 'projectile.png';
-        assetPromises[5].src = 'rapid_fire.png';
-        assetPromises[6].src = 'barrier.png';
-        assetPromises[7].src = 'bomb.png';
+    loadAssets() {
+        const manager = new THREE.LoadingManager();
+        const textureLoader = new THREE.TextureLoader(manager);
+        const imageLoader = new THREE.ImageLoader(manager);
 
-        await Promise.all(assetPromises.map(img => new Promise(resolve => {
-            if(img.complete) resolve();
-            else img.onload = resolve;
-        })));
+        const texturesToLoad = {
+            playerTexture: 'player_ship.png',
+            weaponTexture: 'weapon.png',
+            barrelTexture: 'barrel_texture.png',
+            enemyTexture: 'enemy.png',
+            projectileTexture: 'projectile.png',
+            rapidFireTexture: 'rapid_fire.png',
+            barrierTexture: 'barrier.png',
+            bombTexture: 'bomb.png',
+        };
 
-        // Generate masks after all images are loaded
-        generateMask(assetPromises[0]);
-        generateMask(assetPromises[1]);
-        generateMask(assetPromises[2]);
-        generateMask(assetPromises[3]);
-        generateMask(assetPromises[4]);
-        generateMask(assetPromises[5]);
-        // Barrier image might not need a mask if it's a simple rectangle, but good practice.
-        generateMask(assetPromises[6]);
-        generateMask(assetPromises[7]);
+        const imagesToLoad = {
+            // These share sources with textures, but are loaded as HTMLImageElements for collision masks
+            playerImage: 'player_ship.png',
+            weaponImage: 'weapon.png',
+            enemyImage: 'enemy.png',
+            projectileImage: 'projectile.png',
+            rapidFireImage: 'rapid_fire.png',
+            barrierImage: 'barrier.png',
+            bombImage: 'bomb.png',
+            // This one is unique and only used for a collision mask
+            barrelImage: 'barrel.png',
+        };
 
-        this.assetsLoaded = true;
+        // Load textures
+        for (const key in texturesToLoad) {
+            this.assets[key] = textureLoader.load(texturesToLoad[key]);
+        }
+        
+        // Load images for collision masks
+        for (const key in imagesToLoad) {
+            imageLoader.load(imagesToLoad[key], (image) => {
+                this.assets[key] = image;
+            });
+        }
+
+        manager.onLoad = () => {
+            // All assets are loaded, now generate collision masks
+            Object.values(this.assets).forEach(asset => {
+                if (asset instanceof HTMLImageElement) {
+                    generateMask(asset);
+                }
+            });
+            
+            this.assetsLoaded = true;
+            this.player.onAssetsLoaded();
+        };
+    }
+
+    createBackground() {
+        const laneWidth = this.width / 3;
+        const laneMarkerGeo = new THREE.PlaneGeometry(4, this.height);
+        const laneMarkerMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee, opacity: 0.5, transparent: true });
+
+        const marker1 = new THREE.Mesh(laneMarkerGeo, laneMarkerMat);
+        marker1.position.x = -laneWidth / 2;
+        
+        const marker2 = new THREE.Mesh(laneMarkerGeo, laneMarkerMat);
+        marker2.position.x = laneWidth / 2;
+
+        this.scene.add(marker1);
+        this.scene.add(marker2);
     }
 
     update(deltaTime) {
@@ -109,8 +181,11 @@ export default class Game {
         this.player.update(deltaTime, this.input.targetX);
 
         // Update and filter projectiles
-        this.projectiles = this.projectiles.filter(p => p.active);
         this.projectiles.forEach(p => p.update(deltaTime));
+        this.projectiles = this.projectiles.filter(p => {
+            if (!p.active) p.destroy();
+            return p.active;
+        });
 
         // Spawn and update barrels/barriers
         if (this.barrelTimer > this.barrelInterval) {
@@ -120,11 +195,17 @@ export default class Game {
         } else {
             this.barrelTimer += deltaTime;
         }
-        this.barrels = this.barrels.filter(b => b.active);
         this.barrels.forEach(b => b.update(deltaTime));
+        this.barrels = this.barrels.filter(b => {
+            if (!b.active) b.destroy();
+            return b.active;
+        });
 
-        this.barriers = this.barriers.filter(b => b.active);
         this.barriers.forEach(b => b.update(deltaTime));
+        this.barriers = this.barriers.filter(b => {
+            if (!b.active) b.destroy();
+            return b.active;
+        });
 
         this.particles = this.particles.filter(p => p.active);
         this.particles.forEach(p => p.update(deltaTime));
@@ -136,16 +217,25 @@ export default class Game {
         } else {
             this.enemyTimer += deltaTime;
         }
-        this.enemies = this.enemies.filter(e => e.active);
         this.enemies.forEach(e => e.update(deltaTime));
+        this.enemies = this.enemies.filter(e => {
+            if(!e.active) e.destroy();
+            return e.active;
+        });
 
         // Spawn and update powerups
-        this.powerups = this.powerups.filter(p => p.active);
         this.powerups.forEach(p => p.update(deltaTime));
+        this.powerups = this.powerups.filter(p => {
+            if(!p.active) p.destroy();
+            return p.active;
+        });
 
         // Update bomb effects
-        this.bombEffects = this.bombEffects.filter(b => b.active);
         this.bombEffects.forEach(b => b.update(deltaTime));
+        this.bombEffects = this.bombEffects.filter(b => {
+            if (!b.active) b.destroy();
+            return b.active;
+        });
 
         // Collision detection
         this.projectiles.forEach(projectile => {
@@ -237,21 +327,9 @@ export default class Game {
         });
     }
 
-    draw(context) {
-        // Draw background (lanes)
-        const laneWidth = this.width / 3;
-        context.fillStyle = '#444';
-        context.fillRect(laneWidth, 0, 2, this.height);
-        context.fillRect(laneWidth * 2, 0, 2, this.height);
-
-        this.player.draw(context);
-        this.projectiles.forEach(p => p.draw(context));
-        this.barrels.forEach(b => b.draw(context));
-        this.barriers.forEach(b => b.draw(context));
-        this.enemies.forEach(e => e.draw(context));
-        this.powerups.forEach(p => p.draw(context));
-        this.particles.forEach(p => p.draw(context));
-        this.bombEffects.forEach(b => b.draw(context));
+    draw() {
+        if (!this.assetsLoaded) return;
+        this.renderer.render(this.scene, this.camera);
     }
 
     addProjectile(projectile) {
@@ -336,12 +414,12 @@ export default class Game {
                     if (object instanceof Barrel) {
                          this.score += object.maxHealth;
                          this.audio.play('destroy');
-                         if (object.hasPowerUp) this.spawnPowerUp(object.x, object.y);
+                         if (object.hasPowerUp) this.spawnPowerUp(object.x + object.width / 2, object.y + object.height / 2);
                     } else if (object instanceof Barrier) {
                         this.score += object.maxHealth * 2;
                         this.audio.play('shatter');
                         this.createShatterEffect(object);
-                        if (object.hasPowerUp) this.spawnPowerUp(object.x, object.y);
+                         if (object.hasPowerUp) this.spawnPowerUp(object.x + object.width / 2, object.y + object.height / 2);
                     } else if (object instanceof Enemy) {
                         this.score += object.maxHealth * 5;
                         this.audio.play('destroy');
@@ -369,5 +447,18 @@ export default class Game {
         this.width = width;
         this.height = height;
         this.player.resize();
+
+        this.camera.aspect = width / height;
+        const fov = 2 * Math.atan((height / 2) / 1000) * (180 / Math.PI);
+        this.camera.fov = fov;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(width, height);
+    }
+    
+    destroy() {
+        // Cleanup all objects to prevent memory leaks on restart
+        [...this.projectiles, ...this.barrels, ...this.barriers, ...this.particles, ...this.enemies, ...this.powerups, ...this.bombEffects].forEach(obj => {
+            if(obj.destroy) obj.destroy();
+        });
     }
 }

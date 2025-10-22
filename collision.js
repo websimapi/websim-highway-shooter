@@ -1,15 +1,15 @@
-import { getMask } from 'collisionMask';
+import { getMask } from './collisionMask.js';
 
 /**
  * Performs pixel-perfect collision detection between two game objects.
  * It first checks for bounding box collision for performance, then checks
  * for overlapping opaque pixels if the boxes intersect.
- * It correctly handles translation, scaling, and rotation of obj1 (e.g., the player).
+ * It correctly handles translation, scaling, and rotation for both objects.
  */
 export function checkCollision(obj1, obj2) {
-    // Broad phase: Bounding box check
-    // Note: For a rotated obj1, this bounding box is an approximation but is good enough
-    // for a quick check to see if the objects are anywhere near each other.
+    // Broad phase: Bounding box check (approximated for rotation)
+    // This is a simple AABB check and won't be perfectly tight for rotated objects,
+    // but it's a fast way to rule out objects that are far apart.
     if (
         obj1.x > obj2.x + obj2.width ||
         obj1.x + obj1.width < obj2.x ||
@@ -25,13 +25,18 @@ export function checkCollision(obj1, obj2) {
 
     if (!mask1 || !mask2) {
         // Fallback to bounding box if a mask is missing.
+        // This is the same check as above, so if we're here, they are intersecting.
         return true; 
     }
 
     const { cos, sin } = Math;
-    const rotation = obj1.rotation || 0;
+    const rotation1 = obj1.rotation || 0;
+    const rotation2 = obj2.rotation || 0;
+    
     const centerX1 = obj1.x + obj1.width / 2;
     const centerY1 = obj1.y + obj1.height / 2;
+    const centerX2 = obj2.x + obj2.width / 2;
+    const centerY2 = obj2.y + obj2.height / 2;
 
     const naturalWidth1 = obj1.image.naturalWidth;
     const naturalHeight1 = obj1.image.naturalHeight;
@@ -53,23 +58,21 @@ export function checkCollision(obj1, obj2) {
     for (let worldY = yStart; worldY < yEnd; worldY++) {
         for (let worldX = xStart; worldX < xEnd; worldX++) {
 
-            // --- Transform world coordinates to obj1's local, rotated, scaled image coordinates ---
-            
-            // 1. Translate to be relative to obj1's center
+            // --- Transform world coordinates to obj1's local image coordinates ---
             const dx1 = worldX - centerX1;
             const dy1 = worldY - centerY1;
-
-            // 2. Apply inverse rotation
-            const rotatedX1 = dx1 * cos(-rotation) - dy1 * sin(-rotation);
-            const rotatedY1 = dx1 * sin(-rotation) + dy1 * cos(-rotation);
-
-            // 3. Translate back from center and scale to find texture coordinates
+            const rotatedX1 = dx1 * cos(-rotation1) - dy1 * sin(-rotation1);
+            const rotatedY1 = dx1 * sin(-rotation1) + dy1 * cos(-rotation1);
             const texX1 = Math.floor((rotatedX1 + obj1.width / 2) / scaleX1);
             const texY1 = Math.floor((rotatedY1 + obj1.height / 2) / scaleY1);
 
-            // --- Transform world coordinates to obj2's local, scaled image coordinates ---
-            const texX2 = Math.floor((worldX - obj2.x) / scaleX2);
-            const texY2 = Math.floor((worldY - obj2.y) / scaleY2);
+            // --- Transform world coordinates to obj2's local image coordinates ---
+            const dx2 = worldX - centerX2;
+            const dy2 = worldY - centerY2;
+            const rotatedX2 = dx2 * cos(-rotation2) - dy2 * sin(-rotation2);
+            const rotatedY2 = dx2 * sin(-rotation2) + dy2 * cos(-rotation2);
+            const texX2 = Math.floor((rotatedX2 + obj2.width / 2) / scaleX2);
+            const texY2 = Math.floor((rotatedY2 + obj2.height / 2) / scaleY2);
 
             // Check if the corresponding pixels in both masks are solid
             if (mask1[texY1] && mask1[texY1][texX1] &&

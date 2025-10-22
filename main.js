@@ -2,7 +2,6 @@ import Game from 'game';
 
 window.addEventListener('load', () => {
     const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
     
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -24,9 +23,17 @@ window.addEventListener('load', () => {
         gameOverScreen.style.display = 'none';
         uiContainer.style.display = 'flex';
         powerupTimerEl.style.display = 'none';
+
+        // Fix: Explicitly update canvas dimensions on restart
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
         updateScore(0);
         updateBombCount(1); // Starting bombs
-        game = new Game(canvas.width, canvas.height);
+        if (game) {
+            game.destroy();
+        }
+        game = new Game(canvas.width, canvas.height, canvas);
         game.onGameOver = showGameOver;
         game.onScoreUpdate = updateScore;
         game.onBombUpdate = updateBombCount;
@@ -39,9 +46,11 @@ window.addEventListener('load', () => {
         const deltaTime = timestamp - lastTime;
         lastTime = timestamp;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        game.update(deltaTime);
-        game.draw(ctx);
+        // ctx.clearRect(0, 0, canvas.width, canvas.height); // No longer needed
+        if (game.assetsLoaded) { // Only update and draw if assets are ready
+            game.update(deltaTime);
+            game.draw();
+        }
         
         if (!game.gameOver) {
             requestAnimationFrame(animate);

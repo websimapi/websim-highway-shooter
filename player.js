@@ -1,14 +1,16 @@
 import Projectile from 'projectile';
+import * as THREE from 'three';
 
 export default class Player {
     constructor(game) {
         this.game = game;
         this.resize();
         this.speed = 0.5; // pixels per ms
-        this.image = this.motorcycleImage = new Image();
-        this.motorcycleImage.src = 'player_ship.png';
-        this.weaponImage = new Image();
-        this.weaponImage.src = 'weapon.png';
+        
+        // These are used for collision detection, not rendering.
+        this.image = this.game.assets.playerImage;
+        this.motorcycleImage = this.game.assets.playerImage;
+        this.weaponImage = this.game.assets.weaponImage;
 
         this.baseShootCooldown = 200; // ms
         this.shootCooldown = this.baseShootCooldown;
@@ -25,6 +27,45 @@ export default class Player {
         this.rotation = 0;
         this.maxRotation = 15 * (Math.PI / 180); // 15 degrees in radians
         this.rotationSpeed = 0.005; // Smoothing factor for rotation
+
+        this.mesh = null; // Will be created when assets are loaded
+    }
+
+    onAssetsLoaded() {
+        this.image = this.game.assets.playerImage;
+        this.motorcycleImage = this.game.assets.playerImage;
+        this.weaponImage = this.game.assets.weaponImage;
+        this.createMesh();
+    }
+
+    createMesh() {
+        if (this.mesh) {
+            this.game.scene.remove(this.mesh);
+        }
+
+        const bikeWidth = this.width;
+        const bikeHeight = this.height;
+
+        // Player Group
+        this.mesh = new THREE.Group();
+        this.mesh.position.z = 2; // Make sure player is rendered on top of most things
+        this.game.scene.add(this.mesh);
+
+        // Motorcycle Mesh
+        const motorcycleGeo = new THREE.PlaneGeometry(bikeWidth, bikeHeight);
+        const motorcycleMat = new THREE.MeshBasicMaterial({ map: this.game.assets.playerTexture, transparent: true });
+        this.motorcycleMesh = new THREE.Mesh(motorcycleGeo, motorcycleMat);
+        this.mesh.add(this.motorcycleMesh);
+
+        // Weapon Mesh
+        const weaponWidth = bikeWidth * 0.8;
+        const weaponHeight = bikeHeight * 0.8;
+        const weaponGeo = new THREE.PlaneGeometry(weaponWidth, weaponHeight);
+        const weaponMat = new THREE.MeshBasicMaterial({ map: this.game.assets.weaponTexture, transparent: true });
+        this.weaponMesh = new THREE.Mesh(weaponGeo, weaponMat);
+        this.weaponMesh.position.y = bikeHeight * 0.1;
+        this.weaponMesh.position.z = 0.1; // Slightly in front of bike
+        this.mesh.add(this.weaponMesh);
     }
 
     resize() {
@@ -60,6 +101,11 @@ export default class Player {
         // Clamp player position to screen bounds
         this.x = Math.max(0, Math.min(this.game.width - this.width, this.x));
 
+        // Sync 3D object
+        this.mesh.position.x = this.x + this.width / 2 - this.game.width / 2;
+        this.mesh.position.y = -this.y - this.height / 2 + this.game.height / 2;
+        this.mesh.rotation.z = this.rotation;
+
         // Automatic shooting
         if (this.shootTimer > this.shootCooldown) {
             this.shoot();
@@ -79,25 +125,7 @@ export default class Player {
     }
 
     draw(context) {
-        context.save();
-        
-        const centerX = this.x + this.width / 2;
-        const centerY = this.y + this.height / 2;
-        
-        context.translate(centerX, centerY);
-        context.rotate(this.rotation);
-        
-        // Draw motorcycle centered on the new origin
-        context.drawImage(this.motorcycleImage, -this.width / 2, -this.height / 2, this.width, this.height);
-        
-        const weaponWidth = this.width * 0.8;
-        const weaponHeight = this.height * 0.8;
-        const weaponX = -weaponWidth / 2; // Centered
-        const weaponY = -this.height / 2 - weaponHeight * 0.1;
-
-        context.drawImage(this.weaponImage, weaponX, weaponY, weaponWidth, weaponHeight);
-        
-        context.restore();
+        // Handled by Three.js render loop
     }
 
     shoot() {

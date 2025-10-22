@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 export default class PowerUp {
     constructor(game, x, y, type) {
         this.game = game;
@@ -10,13 +12,19 @@ export default class PowerUp {
         this.active = true;
         this.rotation = 0; // for collision
 
-        this.image = new Image();
+        let texture;
         if (this.type === 'rapidFire') {
-            this.image.src = 'rapid_fire.png';
+            this.image = this.game.assets.rapidFireImage;
+            texture = this.game.assets.rapidFireTexture;
         } else if (this.type === 'bomb') {
-            this.image.src = 'bomb.png';
+            this.image = this.game.assets.bombImage;
+            texture = this.game.assets.bombTexture;
         }
-        // Could add more types here with an else if or switch
+
+        const geometry = new THREE.PlaneGeometry(this.width, this.height);
+        const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.game.scene.add(this.mesh);
     }
 
     update(deltaTime) {
@@ -24,11 +32,24 @@ export default class PowerUp {
         if (this.y > this.game.height) {
             this.active = false;
         }
+
+        this.mesh.position.set(
+            this.x - this.game.width / 2,
+            -this.y + this.game.height / 2,
+            2 // In front of other objects
+        );
     }
 
     draw(context) {
-        if (this.image.complete) {
-            context.drawImage(this.image, this.x, this.y, this.width, this.height);
+        // handled by three.js
+    }
+
+    destroy() {
+        if (this.mesh) {
+            this.game.scene.remove(this.mesh);
+            this.mesh.geometry.dispose();
+            this.mesh.material.dispose();
+            this.mesh = null;
         }
     }
 }

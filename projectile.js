@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 export default class Projectile {
     constructor(game, x, y) {
         this.game = game;
@@ -7,9 +9,16 @@ export default class Projectile {
         this.height = 20;
         this.speed = 0.8; // pixels per ms
         this.active = true;
-        this.image = new Image();
-        this.image.src = 'projectile.png';
-        this.rotation = 0; // Required for collision detection function
+
+        const geometry = new THREE.PlaneGeometry(this.width, this.height);
+        const material = new THREE.MeshBasicMaterial({ map: this.game.assets.projectileTexture, transparent: true });
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.position.set(this.x - this.game.width / 2, this.y * -1 + this.game.height / 2, 1);
+        this.game.scene.add(this.mesh);
+
+        // Required for collision detection function
+        this.rotation = 0; 
+        this.image = this.game.assets.projectileImage; // Keep for collision mask
     }
 
     update(deltaTime) {
@@ -17,9 +26,15 @@ export default class Projectile {
         if (this.y < -this.height) {
             this.active = false;
         }
+        this.mesh.position.y = this.y * -1 + this.game.height / 2;
     }
 
-    draw(context) {
-        context.drawImage(this.image, this.x, this.y, this.width, this.height);
+    destroy() {
+        if (this.mesh) {
+            this.game.scene.remove(this.mesh);
+            this.mesh.geometry.dispose();
+            this.mesh.material.dispose();
+            this.mesh = null;
+        }
     }
 }
