@@ -18,6 +18,7 @@ export default class Barrel {
         this.maxHealth = Math.floor(Math.random() * 5) + 1;
         this.health = this.maxHealth;
         this.active = true;
+        this.rotation = 0; // Required for collision detection function
         
         this.image = new Image();
         this.image.src = 'barrel.png';

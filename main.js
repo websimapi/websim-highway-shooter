@@ -1,4 +1,4 @@
-import Game from './game.js';
+import Game from 'game';
 
 window.addEventListener('load', () => {
     const canvas = document.getElementById('game-canvas');
@@ -62,4 +62,3 @@ window.addEventListener('load', () => {
         }
     });
 });
-

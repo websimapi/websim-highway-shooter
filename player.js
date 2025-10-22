@@ -1,11 +1,11 @@
-import Projectile from './projectile.js';
+import Projectile from 'projectile';
 
 export default class Player {
     constructor(game) {
         this.game = game;
         this.resize();
         this.speed = 0.5; // pixels per ms
-        this.motorcycleImage = new Image();
+        this.image = this.motorcycleImage = new Image();
         this.motorcycleImage.src = 'player_ship.png';
         this.weaponImage = new Image();
         this.weaponImage.src = 'weapon.png';

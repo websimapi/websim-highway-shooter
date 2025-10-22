@@ -1,9 +1,10 @@
-import Player from './player.js';
-import InputHandler from './input.js';
-import Barrel from './barrel.js';
-import { checkCollision } from './collision.js';
-import AudioPlayer from './audio.js';
-import Enemy from './enemy.js';
+import Player from 'player';
+import InputHandler from 'input';
+import Barrel from 'barrel';
+import { checkCollision } from 'collision';
+import AudioPlayer from 'audio';
+import Enemy from 'enemy';
+import { generateMask } from 'collisionMask';
 
 export default class Game {
     constructor(width, height) {
@@ -23,10 +24,39 @@ export default class Game {
         this.score = 0;
         this.onGameOver = () => {};
         this.onScoreUpdate = () => {};
+        this.assetsLoaded = false;
+        this.loadAssets();
+    }
+
+    async loadAssets() {
+        const assetPromises = [
+            this.player.motorcycleImage,
+            this.player.weaponImage,
+            new Image(), // barrel
+            new Image(), // enemy
+            new Image(), // projectile
+        ];
+        assetPromises[2].src = 'barrel.png';
+        assetPromises[3].src = 'enemy.png';
+        assetPromises[4].src = 'projectile.png';
+
+        await Promise.all(assetPromises.map(img => new Promise(resolve => {
+            if(img.complete) resolve();
+            else img.onload = resolve;
+        })));
+
+        // Generate masks after all images are loaded
+        generateMask(assetPromises[0]);
+        generateMask(assetPromises[1]);
+        generateMask(assetPromises[2]);
+        generateMask(assetPromises[3]);
+        generateMask(assetPromises[4]);
+
+        this.assetsLoaded = true;
     }
 
     update(deltaTime) {
-        if (this.gameOver) return;
+        if (this.gameOver || !this.assetsLoaded) return;
 
         this.player.update(deltaTime, this.input.targetX);
 

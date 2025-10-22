@@ -9,6 +9,7 @@ export default class Projectile {
         this.active = true;
         this.image = new Image();
         this.image.src = 'projectile.png';
+        this.rotation = 0; // Required for collision detection function
     }
 
     update(deltaTime) {
@@ -22,4 +23,3 @@ export default class Projectile {
         context.drawImage(this.image, this.x, this.y, this.width, this.height);
     }
 }
-

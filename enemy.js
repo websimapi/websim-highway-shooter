@@ -1,4 +1,4 @@
-import { checkCollision } from './collision.js';
+import { checkCollision } from 'collision';
 
 export default class Enemy {
     constructor(game, x, y) {
@@ -11,6 +11,7 @@ export default class Enemy {
         this.health = 2;
         this.maxHealth = 2;
         this.active = true;
+        this.rotation = 0; // Required for collision detection function
 
         this.image = new Image();
         this.image.src = 'enemy.png';
