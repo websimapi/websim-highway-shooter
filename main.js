@@ -104,7 +104,16 @@ window.addEventListener('load', () => {
     }
 
     function updateBombCount(count) {
-        bombsEl.textContent = `Bombs: ${count}`;
+        bombsEl.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+            const img = document.createElement('img');
+            img.src = 'bomb.png';
+            img.alt = 'Bomb';
+            img.style.width = '30px';
+            img.style.height = '30px';
+            img.style.marginRight = '4px';
+            bombsEl.appendChild(img);
+        }
     }
 
     function updatePowerupTimer(isActive, timeLeft) {
