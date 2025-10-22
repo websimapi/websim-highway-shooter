@@ -9,9 +9,9 @@ export default class InputHandler {
 
         // Keyboard controls
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'a' || e.key === 'ArrowLeft') {
+            if (e.key === 'a' || e.key === 'ArrowLeft' || e.key === 'A') {
                 this.targetX -= 30;
-            } else if (e.key === 'd' || e.key === 'ArrowRight') {
+            } else if (e.key === 'd' || e.key === 'ArrowRight' || e.key === 'D') {
                 this.targetX += 30;
             }
              this.clampTargetX();
@@ -68,4 +68,3 @@ export default class InputHandler {
         this.targetX = Math.max(this.game.player.width / 2, Math.min(this.game.width - this.game.player.width / 2, this.targetX));
     }
 }
-
