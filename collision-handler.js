@@ -19,11 +19,13 @@ export default class CollisionHandler {
                         game.score += barrel.maxHealth;
                         game.onScoreUpdate(game.score);
                         game.audio.play('destroy');
+                        game.recorder.recordEvent('destroy', { x: barrel.x, y: barrel.y });
                         if (barrel.hasPowerUp) {
                             game.spawner.spawnPowerUp(barrel.x + barrel.width / 2, barrel.y + barrel.height / 2, barrel.powerUpType);
                         }
                     } else {
                         game.audio.play('hit');
+                        game.recorder.recordEvent('hit', { x: barrel.x, y: barrel.y });
                     }
                 }
             });
@@ -37,12 +39,14 @@ export default class CollisionHandler {
                         game.score += barrier.maxHealth * 2;
                         game.onScoreUpdate(game.score);
                         game.audio.play('shatter');
+                        game.recorder.recordEvent('shatter', { x: barrier.x, y: barrier.y });
                         game.effectManager.createShatterEffect(barrier);
                         if (barrier.hasPowerUp) {
                             game.spawner.spawnPowerUp(barrier.x + barrier.width / 2, barrier.y + barrier.height / 2, barrier.powerUpType);
                         }
                     } else {
                         game.audio.play('hit');
+                        game.recorder.recordEvent('hit', { x: barrier.x, y: barrier.y });
                     }
                 }
             });
@@ -56,9 +60,11 @@ export default class CollisionHandler {
                         game.score += enemy.maxHealth * 5;
                         game.onScoreUpdate(game.score);
                         game.audio.play('destroy');
+                        game.recorder.recordEvent('destroy', { x: enemy.x, y: enemy.y });
                         game.effectManager.createMonsterExplosionEffect(enemy);
                     } else {
                         game.audio.play('hit');
+                        game.recorder.recordEvent('hit', { x: enemy.x, y: enemy.y });
                     }
                 }
             });
@@ -76,11 +82,13 @@ export default class CollisionHandler {
                         game.score += barrel.maxHealth;
                         game.onScoreUpdate(game.score);
                         game.audio.play('destroy');
+                        game.recorder.recordEvent('destroy', { x: barrel.x, y: barrel.y });
                         if (barrel.hasPowerUp) {
                             game.spawner.spawnPowerUp(barrel.x + barrel.width / 2, barrel.y + barrel.height / 2, barrel.powerUpType);
                         }
                     } else {
                         game.audio.play('hit');
+                        game.recorder.recordEvent('hit', { x: barrel.x, y: barrel.y });
                     }
                 }
             });
@@ -90,7 +98,8 @@ export default class CollisionHandler {
         const checkPlayerCollision = (object) => {
             if (checkCollision(game.player, object)) {
                 game.gameOver = true;
-                game.onGameOver(game.score);
+                const replayData = game.recorder.getReplayData();
+                game.onGameOver(game.score, replayData);
             }
         };
         game.barrels.forEach(checkPlayerCollision);

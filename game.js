@@ -13,6 +13,7 @@ import Spawner from 'spawner';
 import CollisionHandler from 'collision-handler';
 import EffectManager from 'effect-manager';
 import BombExplosionEffect from 'bomb-explosion-effect';
+import ReplayRecorder from 'replay-recorder';
 
 export default class Game {
     constructor(width, height, canvas) {
@@ -46,6 +47,7 @@ export default class Game {
         this.spawner = new Spawner(this);
         this.effectManager = new EffectManager(this);
         this.collisionHandler = new CollisionHandler(this);
+        this.recorder = new ReplayRecorder(this);
 
         this.projectiles = [];
         this.barrels = [];
@@ -136,6 +138,8 @@ export default class Game {
     update(deltaTime) {
         if (this.gameOver || !this.assetsLoaded) return;
 
+        this.recorder.recordFrame();
+
         this.player.update(deltaTime, this.input.targetX);
         this.spawner.update(deltaTime);
 
@@ -171,6 +175,7 @@ export default class Game {
     addProjectile(projectile) {
         this.projectiles.push(projectile);
         this.audio.play('shoot');
+        this.recorder.recordEvent('shoot', { x: projectile.x, y: projectile.y });
     }
 
     triggerBomb() {
@@ -180,7 +185,7 @@ export default class Game {
         const radiusSq = radius * radius;
 
         this.audio.play('bomb_explosion');
-        this.bombEffects.push(new BombExplosionEffect(this, playerX, playerY));
+        this.recorder.recordEvent('bomb_explosion', { x: playerX, y: playerY });
 
         const checkAndDestroy = (object) => {
             const objX = object.x + object.width / 2;
