@@ -12,10 +12,10 @@ export default class Player {
 
         this.shootCooldown = 200; // ms
         this.shootTimer = 0;
-
+        
         this.rotation = 0;
-        this.maxRotation = Math.PI / 18; // 10 degrees
-        this.rotationSpeed = 0.005; // radians per ms
+        this.maxRotation = 15 * (Math.PI / 180); // 15 degrees in radians
+        this.rotationSpeed = 0.005; // Smoothing factor for rotation
     }
 
     resize() {
@@ -30,7 +30,17 @@ export default class Player {
         const dx = targetX - (this.x + this.width / 2);
         const moveDistance = this.speed * deltaTime;
         
-        const prevX = this.x;
+        // Determine target rotation based on movement direction
+        let targetRotation = 0;
+        const deadZone = 1; // pixels, to prevent jittering
+        if (dx < -deadZone) {
+            targetRotation = -this.maxRotation;
+        } else if (dx > deadZone) {
+            targetRotation = this.maxRotation;
+        }
+
+        // Smoothly interpolate to the target rotation
+        this.rotation += (targetRotation - this.rotation) * this.rotationSpeed * deltaTime;
 
         if (Math.abs(dx) < moveDistance) {
             this.x = targetX - this.width / 2;
@@ -40,25 +50,6 @@ export default class Player {
 
         // Clamp player position to screen bounds
         this.x = Math.max(0, Math.min(this.game.width - this.width, this.x));
-        
-        const actualDx = this.x - prevX;
-        let targetRotation = 0;
-
-        if (actualDx < -0.1) { // Moving left
-            targetRotation = -this.maxRotation;
-        } else if (actualDx > 0.1) { // Moving right
-            targetRotation = 0; // Normal position as requested
-        } else { // Not moving
-            targetRotation = 0;
-        }
-
-        // Smoothly interpolate rotation
-        const rotationDiff = targetRotation - this.rotation;
-        if (Math.abs(rotationDiff) > 0.01) {
-            this.rotation += rotationDiff * this.rotationSpeed * deltaTime;
-        } else {
-            this.rotation = targetRotation;
-        }
 
         // Automatic shooting
         if (this.shootTimer > this.shootCooldown) {
@@ -72,19 +63,19 @@ export default class Player {
     draw(context) {
         context.save();
         
-        // Translate to the center of the player for rotation
         const centerX = this.x + this.width / 2;
         const centerY = this.y + this.height / 2;
+        
         context.translate(centerX, centerY);
         context.rotate(this.rotation);
-        context.translate(-centerX, -centerY);
-
-        context.drawImage(this.motorcycleImage, this.x, this.y, this.width, this.height);
+        
+        // Draw motorcycle centered on the new origin
+        context.drawImage(this.motorcycleImage, -this.width / 2, -this.height / 2, this.width, this.height);
         
         const weaponWidth = this.width * 0.8;
         const weaponHeight = this.height * 0.8;
-        const weaponX = this.x + (this.width - weaponWidth) / 2;
-        const weaponY = this.y - weaponHeight * 0.1;
+        const weaponX = -weaponWidth / 2; // Centered
+        const weaponY = -this.height / 2 - weaponHeight * 0.1;
 
         context.drawImage(this.weaponImage, weaponX, weaponY, weaponWidth, weaponHeight);
         
