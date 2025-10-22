@@ -22,6 +22,8 @@ window.addEventListener('load', () => {
         startScreen.style.display = 'none';
         gameOverScreen.style.display = 'none';
         uiContainer.style.display = 'block';
+        powerupTimerEl.style.display = 'none';
+        updateScore(0);
         game = new Game(canvas.width, canvas.height);
         game.onGameOver = showGameOver;
         game.onScoreUpdate = updateScore;
