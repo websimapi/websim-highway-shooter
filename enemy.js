@@ -5,8 +5,10 @@ export default class Enemy {
         this.game = game;
         this.x = x;
         this.y = y;
-        this.width = this.game.width * 0.08;
-        this.height = this.width;
+        this.baseWidth = this.game.width * 0.08;
+        this.baseHeight = this.baseWidth;
+        this.width = this.baseWidth;
+        this.height = this.baseHeight;
         this.speed = 0.05 + Math.random() * 0.03; // pixels per ms
         this.health = 2;
         this.maxHealth = 2;
@@ -15,10 +17,29 @@ export default class Enemy {
 
         this.image = new Image();
         this.image.src = 'enemy.png';
+        
+        // Animation properties for pulsing/bouncing
+        this.animationTimer = Math.random() * Math.PI * 2; // Random start phase
+        this.animationSpeed = 0.005; // How fast it pulses
+        this.pulseAmount = 0.1; // How much it scales (10%)
     }
 
     update(deltaTime) {
         if (!this.active) return;
+
+        // --- Animation ---
+        this.animationTimer += this.animationSpeed * deltaTime;
+        const scale = 1 + Math.sin(this.animationTimer) * this.pulseAmount;
+        
+        const oldWidth = this.width;
+        const oldHeight = this.height;
+
+        this.width = this.baseWidth * scale;
+        this.height = this.baseHeight * scale;
+
+        // Adjust position to keep the center stable during scaling
+        this.x += (oldWidth - this.width) / 2;
+        this.y += (oldHeight - this.height) / 2;
 
         // --- Movement towards player ---
         const player = this.game.player;
@@ -38,7 +59,9 @@ export default class Enemy {
             x: this.x + moveX,
             y: this.y + moveY,
             width: this.width,
-            height: this.height
+            height: this.height,
+            image: this.image, // Pass image for collision check
+            rotation: this.rotation
         };
         
         // --- Collision with Barrels ---
