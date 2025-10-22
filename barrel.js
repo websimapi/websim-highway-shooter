@@ -24,8 +24,20 @@ export default class Barrel {
         this.meshRotation = 0;
         this.rotationSpeed = this.speedY * 0.05;
         
-        this.hasPowerUp = Math.random() < 0.1; // 10% chance
-        this.powerUpType = Math.random() < 0.5 ? 'rapidFire' : 'bomb';
+        // --- Power-up Logic ---
+        this.hasPowerUp = Math.random() < 0.1; // 1 in 10 chance to have a power-up
+        if (this.hasPowerUp) {
+            // Relative weights: bomb = 1/30, rapidFire = 1/10 = 3/30.
+            // Total weight is 4. Bomb's chance is 1/4.
+            const bombChance = (1 / 30);
+            const rapidFireChance = (1 / 10);
+            const totalWeight = bombChance + rapidFireChance;
+            const bombProbability = bombChance / totalWeight; // Should be 0.25
+
+            this.powerUpType = Math.random() < bombProbability ? 'bomb' : 'rapidFire';
+        } else {
+            this.powerUpType = null;
+        }
         
         this.image = this.game.assets.barrelImage; // Keep for collision mask
         this.rotation = 0; // for collision function

@@ -67,8 +67,7 @@ export default class Spawner {
         this.game.barriers.push(new Barrier(this.game, lane));
     }
 
-    spawnPowerUp(x, y) {
-        const type = Math.random() < 0.5 ? 'rapidFire' : 'bomb';
+    spawnPowerUp(x, y, type) {
         this.game.powerups.push(new PowerUp(this.game, x, y, type));
     }
 

@@ -19,9 +19,20 @@ export default class Barrier {
         this.active = true;
         this.rotation = 0;
         
-        // Power-up logic
-        this.hasPowerUp = Math.random() < 0.5; // 50% chance
-        this.powerUpType = 'rapidFire';
+        // --- Power-up Logic ---
+        this.hasPowerUp = Math.random() < 0.1; // 1 in 10 chance to have a power-up
+        if (this.hasPowerUp) {
+            // Relative weights: bomb = 1/30, rapidFire = 1/10 = 3/30.
+            // Total weight is 4. Bomb's chance is 1/4.
+            const bombChance = (1 / 30);
+            const rapidFireChance = (1 / 10);
+            const totalWeight = bombChance + rapidFireChance;
+            const bombProbability = bombChance / totalWeight; // Should be 0.25
+
+            this.powerUpType = Math.random() < bombProbability ? 'bomb' : 'rapidFire';
+        } else {
+            this.powerUpType = null;
+        }
         
         this.image = this.game.assets.barrierImage;
 

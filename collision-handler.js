@@ -20,7 +20,7 @@ export default class CollisionHandler {
                         game.onScoreUpdate(game.score);
                         game.audio.play('destroy');
                         if (barrel.hasPowerUp) {
-                            game.spawner.spawnPowerUp(barrel.x + barrel.width / 2, barrel.y + barrel.height / 2);
+                            game.spawner.spawnPowerUp(barrel.x + barrel.width / 2, barrel.y + barrel.height / 2, barrel.powerUpType);
                         }
                     } else {
                         game.audio.play('hit');
@@ -39,7 +39,7 @@ export default class CollisionHandler {
                         game.audio.play('shatter');
                         game.effectManager.createShatterEffect(barrier);
                         if (barrier.hasPowerUp) {
-                            game.spawner.spawnPowerUp(barrier.x + barrier.width / 2, barrier.y + barrier.height / 2);
+                            game.spawner.spawnPowerUp(barrier.x + barrier.width / 2, barrier.y + barrier.height / 2, barrier.powerUpType);
                         }
                     } else {
                         game.audio.play('hit');
@@ -77,7 +77,7 @@ export default class CollisionHandler {
                         game.onScoreUpdate(game.score);
                         game.audio.play('destroy');
                         if (barrel.hasPowerUp) {
-                            game.spawner.spawnPowerUp(barrel.x + barrel.width / 2, barrel.y + barrel.height / 2);
+                            game.spawner.spawnPowerUp(barrel.x + barrel.width / 2, barrel.y + barrel.height / 2, barrel.powerUpType);
                         }
                     } else {
                         game.audio.play('hit');
@@ -111,4 +111,3 @@ export default class CollisionHandler {
         });
     }
 }
-
