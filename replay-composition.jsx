@@ -1,6 +1,27 @@
 import { jsxDEV } from "react/jsx-dev-runtime";
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, Audio, Img, useVideoConfig } from "remotion";
+import * as fflate from "fflate";
+let decompressedFramesCache = null;
+function base64ToArrayBuffer(base64) {
+  const binary_string = window.atob(base64);
+  const len = binary_string.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary_string.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+const getDecompressedFrames = (compressedFramesBase64) => {
+  if (decompressedFramesCache) {
+    return decompressedFramesCache;
+  }
+  const compressedFrames = base64ToArrayBuffer(compressedFramesBase64);
+  const framesData = fflate.decompressSync(new Uint8Array(compressedFrames));
+  const framesString = fflate.strFromU8(framesData);
+  decompressedFramesCache = JSON.parse(framesString);
+  return decompressedFramesCache;
+};
 const findClosestFrameIndex = (frames, targetTime) => {
   let low = 0;
   let high = frames.length - 1;
@@ -30,12 +51,13 @@ const findClosestFrameIndex = (frames, targetTime) => {
   }
   return low;
 };
-const ReplayComposition = ({ replayData }) => {
+const ReplayComposition = ({ replayData, assetUrls }) => {
   const frame = useCurrentFrame();
   const { fps, width: compWidth, height: compHeight } = useVideoConfig();
   const currentTime = frame / fps * 1e3;
-  const closestFrameIndex = findClosestFrameIndex(replayData.frames, currentTime);
-  const frameData = replayData.frames[closestFrameIndex];
+  const frames = getDecompressedFrames(replayData.compressedFrames);
+  const closestFrameIndex = findClosestFrameIndex(frames, currentTime);
+  const frameData = frames[closestFrameIndex];
   if (!frameData) return null;
   const gameWidth = replayData.width;
   const gameHeight = replayData.height;
@@ -47,11 +69,11 @@ const ReplayComposition = ({ replayData }) => {
   const audioElements = replayData.events.map((event, i) => {
     const startFrame = Math.floor(event.time / 1e3 * fps);
     if (frame < startFrame || frame > startFrame + fps / 2) return null;
-    const audioSrc = replayData.audio[event.type];
+    const audioSrc = assetUrls[event.type];
     if (!audioSrc) return null;
     return /* @__PURE__ */ jsxDEV(Audio, { src: audioSrc, startFrom: 0, volume: 0.5 }, `audio-${i}-${startFrame}`, false, {
       fileName: "<stdin>",
-      lineNumber: 74,
+      lineNumber: 102,
       columnNumber: 16
     });
   }).filter(Boolean);
@@ -72,7 +94,7 @@ const ReplayComposition = ({ replayData }) => {
         backgroundColor: "rgba(255,255,255,0.3)"
       } }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 90,
+        lineNumber: 118,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV("div", { style: {
@@ -84,30 +106,9 @@ const ReplayComposition = ({ replayData }) => {
         backgroundColor: "rgba(255,255,255,0.3)"
       } }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 98,
+        lineNumber: 126,
         columnNumber: 17
       }),
-      frameData.particles.map((particle, i) => /* @__PURE__ */ jsxDEV(
-        "div",
-        {
-          style: {
-            position: "absolute",
-            left: particle.x * scale,
-            top: particle.y * scale,
-            width: particle.size * scale,
-            height: particle.size * scale,
-            backgroundColor: particle.color,
-            borderRadius: "50%"
-          }
-        },
-        `particle-${i}`,
-        false,
-        {
-          fileName: "<stdin>",
-          lineNumber: 109,
-          columnNumber: 21
-        }
-      )),
       frameData.barrels.map((barrel, i) => {
         const scaledBarrelWidth = barrel.width * scale;
         const scaledBarrelHeight = barrel.height * scale;
@@ -134,21 +135,21 @@ const ReplayComposition = ({ replayData }) => {
             height: scaledBarrelWidth,
             left: radius - faceWidth / 2,
             top: (scaledBarrelHeight - scaledBarrelWidth) / 2,
-            backgroundImage: `url(${replayData.assets.barrelTexture})`,
+            backgroundImage: `url(${assetUrls.barrelTexture})`,
             backgroundSize: `${circumference}px ${scaledBarrelWidth}px`,
             backgroundPosition: `-${j * faceWidth}px 0`,
             transform: `rotateY(${j * (360 / 16)}deg) translateZ(${translateZ}px)`
           } }, j, false, {
             fileName: "<stdin>",
-            lineNumber: 150,
+            lineNumber: 178,
             columnNumber: 41
           })) }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 143,
+            lineNumber: 171,
             columnNumber: 33
           }) }, `barrel-3d-${i}`, false, {
             fileName: "<stdin>",
-            lineNumber: 135,
+            lineNumber: 163,
             columnNumber: 29
           }),
           /* @__PURE__ */ jsxDEV("div", { style: {
@@ -163,12 +164,12 @@ const ReplayComposition = ({ replayData }) => {
             zIndex: 10
           }, children: barrel.health }, `barrel-health-${i}`, false, {
             fileName: "<stdin>",
-            lineNumber: 164,
+            lineNumber: 192,
             columnNumber: 29
           })
         ] }, `barrel-fragment-${i}`, true, {
           fileName: "<stdin>",
-          lineNumber: 134,
+          lineNumber: 162,
           columnNumber: 25
         });
       }),
@@ -182,14 +183,14 @@ const ReplayComposition = ({ replayData }) => {
         /* @__PURE__ */ jsxDEV(
           Img,
           {
-            src: replayData.assets.barrier,
+            src: assetUrls.barrier,
             style: { width: "100%", height: "100%" }
           },
           void 0,
           false,
           {
             fileName: "<stdin>",
-            lineNumber: 190,
+            lineNumber: 218,
             columnNumber: 25
           }
         ),
@@ -204,112 +205,116 @@ const ReplayComposition = ({ replayData }) => {
           textShadow: `0 0 ${4 * scale}px black`
         }, children: barrier.health }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 194,
+          lineNumber: 222,
           columnNumber: 25
         })
       ] }, `barrier-${i}`, true, {
         fileName: "<stdin>",
-        lineNumber: 183,
-        columnNumber: 21
-      })),
-      frameData.enemies.map((enemy, i) => /* @__PURE__ */ jsxDEV("div", { style: {
-        position: "absolute",
-        left: enemy.x * scale,
-        top: enemy.y * scale,
-        width: enemy.baseWidth * enemy.scale * scale,
-        height: enemy.baseHeight * enemy.scale * scale
-      }, children: /* @__PURE__ */ jsxDEV(
-        Img,
-        {
-          src: replayData.assets.enemy,
-          style: { width: "100%", height: "100%" }
-        },
-        void 0,
-        false,
-        {
-          fileName: "<stdin>",
-          lineNumber: 218,
-          columnNumber: 25
-        }
-      ) }, `enemy-${i}`, false, {
-        fileName: "<stdin>",
         lineNumber: 211,
         columnNumber: 21
       })),
-      frameData.projectiles.map((projectile, i) => /* @__PURE__ */ jsxDEV("div", { style: {
-        position: "absolute",
-        left: projectile.x * scale,
-        top: projectile.y * scale,
-        width: 10 * scale,
-        height: 20 * scale
-      }, children: /* @__PURE__ */ jsxDEV(
-        Img,
-        {
-          src: replayData.assets.projectile,
-          style: { width: "100%", height: "100%" }
-        },
-        void 0,
-        false,
-        {
-          fileName: "<stdin>",
-          lineNumber: 234,
-          columnNumber: 25
-        }
-      ) }, `projectile-${i}`, false, {
-        fileName: "<stdin>",
-        lineNumber: 227,
-        columnNumber: 21
-      })),
-      frameData.powerups.map((powerup, i) => /* @__PURE__ */ jsxDEV("div", { style: {
-        position: "absolute",
-        left: powerup.x * scale,
-        top: powerup.y * scale,
-        width: 40 * scale,
-        height: 40 * scale
-      }, children: /* @__PURE__ */ jsxDEV(
-        Img,
-        {
-          src: powerup.type === "rapidFire" ? replayData.assets.rapidFire : replayData.assets.bomb,
-          style: { width: "100%", height: "100%" }
-        },
-        void 0,
-        false,
-        {
-          fileName: "<stdin>",
-          lineNumber: 250,
-          columnNumber: 25
-        }
-      ) }, `powerup-${i}`, false, {
-        fileName: "<stdin>",
-        lineNumber: 243,
-        columnNumber: 21
-      })),
-      /* @__PURE__ */ jsxDEV("div", { style: {
-        position: "absolute",
-        left: frameData.player.x * scale,
-        top: frameData.player.y * scale,
-        width: frameData.player.width * scale,
-        height: frameData.player.height * scale,
-        transform: `rotate(${frameData.player.rotation}rad)`
-      }, children: [
-        /* @__PURE__ */ jsxDEV(
+      frameData.enemies.map((enemy, i) => {
+        const baseWidth = replayData.config.enemy.baseWidth;
+        const baseHeight = replayData.config.enemy.baseHeight;
+        return /* @__PURE__ */ jsxDEV("div", { style: {
+          position: "absolute",
+          left: enemy.x * scale,
+          top: enemy.y * scale,
+          width: baseWidth * enemy.scale * scale,
+          height: baseHeight * enemy.scale * scale
+        }, children: /* @__PURE__ */ jsxDEV(
           Img,
           {
-            src: replayData.assets.playerShip,
+            src: enemy.type === "red" ? assetUrls.redEnemy : assetUrls.enemy,
             style: { width: "100%", height: "100%" }
           },
           void 0,
           false,
           {
             fileName: "<stdin>",
-            lineNumber: 266,
+            lineNumber: 249,
+            columnNumber: 29
+          }
+        ) }, `enemy-${i}`, false, {
+          fileName: "<stdin>",
+          lineNumber: 242,
+          columnNumber: 25
+        });
+      }),
+      frameData.projectiles.map((projectile, i) => /* @__PURE__ */ jsxDEV("div", { style: {
+        position: "absolute",
+        left: projectile.x * scale,
+        top: projectile.y * scale,
+        width: replayData.config.projectile.width * scale,
+        height: replayData.config.projectile.height * scale
+      }, children: /* @__PURE__ */ jsxDEV(
+        Img,
+        {
+          src: assetUrls.projectile,
+          style: { width: "100%", height: "100%" }
+        },
+        void 0,
+        false,
+        {
+          fileName: "<stdin>",
+          lineNumber: 266,
+          columnNumber: 25
+        }
+      ) }, `projectile-${i}`, false, {
+        fileName: "<stdin>",
+        lineNumber: 259,
+        columnNumber: 21
+      })),
+      frameData.powerups.map((powerup, i) => /* @__PURE__ */ jsxDEV("div", { style: {
+        position: "absolute",
+        left: powerup.x * scale,
+        top: powerup.y * scale,
+        width: replayData.config.powerup.width * scale,
+        height: replayData.config.powerup.height * scale
+      }, children: /* @__PURE__ */ jsxDEV(
+        Img,
+        {
+          src: powerup.type === "rapidFire" ? assetUrls.rapidFire : assetUrls.bomb,
+          style: { width: "100%", height: "100%" }
+        },
+        void 0,
+        false,
+        {
+          fileName: "<stdin>",
+          lineNumber: 282,
+          columnNumber: 25
+        }
+      ) }, `powerup-${i}`, false, {
+        fileName: "<stdin>",
+        lineNumber: 275,
+        columnNumber: 21
+      })),
+      /* @__PURE__ */ jsxDEV("div", { style: {
+        position: "absolute",
+        left: frameData.player.x * scale,
+        top: frameData.player.y * scale,
+        width: replayData.config.player.width * scale,
+        height: replayData.config.player.height * scale,
+        transform: `rotate(${frameData.player.rotation}rad)`
+      }, children: [
+        /* @__PURE__ */ jsxDEV(
+          Img,
+          {
+            src: assetUrls.playerShip,
+            style: { width: "100%", height: "100%" }
+          },
+          void 0,
+          false,
+          {
+            fileName: "<stdin>",
+            lineNumber: 298,
             columnNumber: 21
           }
         ),
         /* @__PURE__ */ jsxDEV(
           Img,
           {
-            src: replayData.assets.weapon,
+            src: assetUrls.weapon,
             style: {
               position: "absolute",
               top: "5%",
@@ -322,18 +327,18 @@ const ReplayComposition = ({ replayData }) => {
           false,
           {
             fileName: "<stdin>",
-            lineNumber: 270,
+            lineNumber: 302,
             columnNumber: 21
           }
         )
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 258,
+        lineNumber: 290,
         columnNumber: 17
       })
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 82,
+      lineNumber: 110,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: {
@@ -351,7 +356,7 @@ const ReplayComposition = ({ replayData }) => {
         frameData.score
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 291,
+        lineNumber: 323,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV("div", { style: {
@@ -362,7 +367,7 @@ const ReplayComposition = ({ replayData }) => {
       }, children: Array.from({ length: frameData.bombCount }).map((_, i) => /* @__PURE__ */ jsxDEV(
         Img,
         {
-          src: replayData.assets.bomb,
+          src: assetUrls.bomb,
           style: {
             width: 50,
             height: 50,
@@ -373,17 +378,17 @@ const ReplayComposition = ({ replayData }) => {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 304,
+          lineNumber: 336,
           columnNumber: 25
         }
       )) }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 297,
+        lineNumber: 329,
         columnNumber: 17
       })
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 284,
+      lineNumber: 316,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV("div", { style: {
@@ -397,12 +402,12 @@ const ReplayComposition = ({ replayData }) => {
       textTransform: "uppercase"
     }, children: "Instant Replay" }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 318,
+      lineNumber: 350,
       columnNumber: 13
     })
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 78,
+    lineNumber: 106,
     columnNumber: 9
   });
 };

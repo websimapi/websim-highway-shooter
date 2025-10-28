@@ -11,7 +11,6 @@ export default class PowerUp {
         this.speedY = 0.1; // Slower than barrels
         this.active = true;
         this.rotation = 0; // for collision
-        this.initialized = false; // Flag to check if first update has run
 
         let texture;
         if (this.type === 'rapidFire') {
@@ -25,22 +24,16 @@ export default class PowerUp {
         const geometry = new THREE.PlaneGeometry(this.width, this.height);
         const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
         this.mesh = new THREE.Mesh(geometry, material);
-        // Start far off-screen to avoid flashing at origin
-        this.mesh.position.set(0, this.game.height, 0); 
+        // Start at correct position but offscreen vertically
+        this.mesh.position.set(
+            this.x - this.game.width / 2,
+            -this.y + this.game.height / 2,
+            2 // In front of other objects
+        );
         this.game.scene.add(this.mesh);
     }
 
     update(deltaTime) {
-        if (!this.initialized) {
-            // On first update, move to correct starting position
-            this.mesh.position.set(
-                this.x - this.game.width / 2,
-                -this.y + this.game.height / 2,
-                2 // In front of other objects
-            );
-            this.initialized = true;
-        }
-
         this.y += this.speedY * deltaTime;
         if (this.y > this.game.height) {
             this.active = false;

@@ -98,8 +98,7 @@ export default class CollisionHandler {
         const checkPlayerCollision = (object) => {
             if (checkCollision(game.player, object)) {
                 game.gameOver = true;
-                const replayData = game.recorder.getReplayData();
-                game.onGameOver(game.score, replayData);
+                game.onGameOver(game.score);
             }
         };
         game.barrels.forEach(checkPlayerCollision);

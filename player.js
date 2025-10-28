@@ -8,7 +8,7 @@ export default class Player {
         this.speed = 0.5; // pixels per ms
         
         // These are used for collision detection, not rendering.
-        this.image = this.game.assets.playerImage;
+        // this.image is now a getter
         this.motorcycleImage = this.game.assets.playerImage;
         this.weaponImage = this.game.assets.weaponImage;
 
@@ -31,8 +31,12 @@ export default class Player {
         this.mesh = null; // Will be created when assets are loaded
     }
 
+    get image() {
+        return this.game.assets.playerImage;
+    }
+
     onAssetsLoaded() {
-        this.image = this.game.assets.playerImage;
+        // this.image = this.game.assets.playerImage; // No longer needed
         this.motorcycleImage = this.game.assets.playerImage;
         this.weaponImage = this.game.assets.weaponImage;
         this.createMesh();

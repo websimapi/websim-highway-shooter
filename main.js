@@ -59,7 +59,7 @@ window.addEventListener('load', () => {
         }
     }
 
-    function showGameOver(score, replayData) {
+    async function showGameOver(score) {
         uiContainer.style.display = 'none';
         gameOverScreen.style.display = 'flex';
         finalScoreEl.textContent = score;
@@ -70,33 +70,46 @@ window.addEventListener('load', () => {
         const replayView = document.getElementById('replay-view');
         const replayContainer = document.getElementById('replay-container');
 
+        // This AbortController will manage our one-time event listeners
+        let controller = new AbortController();
+        const signal = controller.signal;
+
         gameOverContent.style.display = 'block';
         replayView.style.display = 'none';
 
-        // To prevent multiple listeners, we clone and replace the button
-        const newWatchReplayButton = watchReplayButton.cloneNode(true);
-        watchReplayButton.parentNode.replaceChild(newWatchReplayButton, watchReplayButton);
+        // Disable button while preparing replay data
+        watchReplayButton.disabled = true;
+        watchReplayButton.textContent = 'Preparing Replay...';
 
-        const newBackToScoreButton = backToScoreButton.cloneNode(true);
-        backToScoreButton.parentNode.replaceChild(newBackToScoreButton, backToScoreButton);
+        const replayData = await game.recorder.getReplayData();
+        
+        watchReplayButton.disabled = false;
+        watchReplayButton.textContent = 'Watch Instant Replay';
 
-        newWatchReplayButton.addEventListener('click', () => {
+        watchReplayButton.addEventListener('click', () => {
             gameOverContent.style.display = 'none';
             replayView.style.display = 'block';
             if (replayRoot) {
                 replayRoot.unmount();
             }
             replayRoot = showReplay(replayContainer, replayData);
-        });
+        }, { signal }); // Use the signal here
 
-        newBackToScoreButton.addEventListener('click', () => {
+        backToScoreButton.addEventListener('click', () => {
             gameOverContent.style.display = 'block';
             replayView.style.display = 'none';
             if (replayRoot) {
                 replayRoot.unmount();
                 replayRoot = null;
             }
-        });
+        }, { signal }); // And here
+
+        // When the game restarts, we must abort the old listeners to prevent memory leaks
+        const cleanupListeners = () => {
+            controller.abort();
+            restartButton.removeEventListener('click', cleanupListeners);
+        };
+        restartButton.addEventListener('click', cleanupListeners);
     }
 
     function updateScore(score) {

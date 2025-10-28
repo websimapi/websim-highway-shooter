@@ -39,7 +39,7 @@ export default class Barrel {
             this.powerUpType = null;
         }
         
-        this.image = this.game.assets.barrelImage; // Keep for collision mask
+        // this.image is now a getter
         this.rotation = 0; // for collision function
 
         // --- Three.js Object ---
@@ -63,6 +63,10 @@ export default class Barrel {
         this.game.scene.add(this.textMesh);
 
         this.updateHealthText();
+    }
+
+    get image() {
+        return this.game.assets.barrelImage;
     }
 
     update(deltaTime) {

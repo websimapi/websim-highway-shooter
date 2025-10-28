@@ -10,6 +10,9 @@ export default class Spawner {
         this.barrelInterval = 2000; // ms
         this.enemyTimer = 5000; // Time before first enemy cluster
         this.enemyInterval = 12000; // Time between enemy clusters
+        
+        this.redEnemySpawnThreshold = 500;
+        this.redEnemySpawnInterval = 250;
     }
 
     update(deltaTime) {
@@ -28,6 +31,12 @@ export default class Spawner {
             this.enemyTimer = 0;
         } else {
             this.enemyTimer += deltaTime;
+        }
+
+        // Spawn Red enemies based on score
+        if (this.game.score >= this.redEnemySpawnThreshold) {
+            this.spawnRedEnemy();
+            this.redEnemySpawnThreshold += this.redEnemySpawnInterval;
         }
     }
 
@@ -83,5 +92,12 @@ export default class Spawner {
             const y = -100 - Math.random() * 300; // Stagger their vertical start
             this.game.enemies.push(new Enemy(this.game, x, y));
         }
+    }
+
+    spawnRedEnemy() {
+        // Spawn in a random position at the top, off-screen
+        const x = Math.random() * (this.game.width - this.game.player.width);
+        const y = -150;
+        this.game.enemies.push(new Enemy(this.game, x, y, 'red'));
     }
 }

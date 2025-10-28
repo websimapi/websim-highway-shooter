@@ -18,7 +18,11 @@ export default class Projectile {
 
         // Required for collision detection function
         this.rotation = 0; 
-        this.image = this.game.assets.projectileImage; // Keep for collision mask
+        // this.image is now a getter
+    }
+
+    get image() {
+        return this.game.assets.projectileImage;
     }
 
     update(deltaTime) {

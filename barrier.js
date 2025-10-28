@@ -34,7 +34,7 @@ export default class Barrier {
             this.powerUpType = null;
         }
         
-        this.image = this.game.assets.barrierImage;
+        // this.image is now a getter
 
         // Three.js setup
         const geometry = new THREE.PlaneGeometry(this.width, this.height);
@@ -57,6 +57,10 @@ export default class Barrier {
         this.mesh.add(this.textMesh);
 
         this.updateHealthText();
+    }
+
+    get image() {
+        return this.game.assets.barrierImage;
     }
 
     update(deltaTime) {

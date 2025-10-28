@@ -2,29 +2,42 @@ import { checkCollision } from 'collision';
 import * as THREE from 'three';
 
 export default class Enemy {
-    constructor(game, x, y) {
+    constructor(game, x, y, type = 'green') {
         this.game = game;
         this.x = x;
         this.y = y;
+        this.type = type;
+
         this.baseWidth = this.game.width * 0.08;
+        
+        if (this.type === 'red') {
+            this.baseWidth *= 1.2; // A bit bigger
+            this.speed = (0.05 + Math.random() * 0.03) * 0.5; // Slower
+            this.health = 20; // 10x more HP
+            this.maxHealth = 20;
+            // this.image is now a getter
+            this.texture = this.game.assets.redEnemyTexture;
+        } else { // Default green enemy
+            this.speed = 0.05 + Math.random() * 0.03; // pixels per ms
+            this.health = 2;
+            this.maxHealth = 2;
+            // this.image is now a getter
+            this.texture = this.game.assets.enemyTexture;
+        }
+
         this.baseHeight = this.baseWidth;
         this.width = this.baseWidth;
         this.height = this.baseHeight;
-        this.speed = 0.05 + Math.random() * 0.03; // pixels per ms
-        this.health = 2;
-        this.maxHealth = 2;
         this.active = true;
         this.rotation = 0; // Required for collision detection function
 
-        this.image = this.game.assets.enemyImage;
-        
         // Animation properties for pulsing/bouncing
         this.animationTimer = Math.random() * Math.PI * 2; // Random start phase
         this.animationSpeed = 0.005; // How fast it pulses
         this.pulseAmount = 0.1; // How much it scales (10%)
 
         const geometry = new THREE.PlaneGeometry(this.width, this.height);
-        const material = new THREE.MeshBasicMaterial({ map: this.game.assets.enemyTexture, transparent: true });
+        const material = new THREE.MeshBasicMaterial({ map: this.texture, transparent: true });
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.set(this.x - this.game.width / 2, this.y * -1 + this.game.height / 2, 1);
         this.game.scene.add(this.mesh);
@@ -44,6 +57,10 @@ export default class Enemy {
         this.healthBarContainer.add(this.healthBarMesh);
         this.healthBarContainer.visible = false;
         this.mesh.add(this.healthBarContainer);
+    }
+
+    get image() {
+        return this.type === 'red' ? this.game.assets.redEnemyImage : this.game.assets.enemyImage;
     }
 
     update(deltaTime) {
