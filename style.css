@@ -5,12 +5,17 @@ body {
     background-color: #111;
     font-family: 'Helvetica Neue', sans-serif;
     color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
 }
 
 canvas {
     display: block;
-    /* background-color: #333; */ /* This will be controlled by Three.js now */
     background: #283747; /* Dark blue-grey road color */
+    max-width: 100vw;
+    max-height: 100vh;
 }
 
 #start-screen, #game-over-screen {
@@ -85,7 +90,7 @@ button {
     align-items: center;
 }
 
-.replay-container-class {
+#replay-container {
     margin: 20px auto;
     width: 100%;
     border: 2px solid rgba(255, 255, 255, 0.3);
@@ -93,7 +98,4 @@ button {
     overflow: hidden;
 }
 
-#replay-container {
-    /* Styles for the dynamically created player will be applied via JS.
-       This is a fallback or can be removed if not needed. */
-}
+/* remove .replay-container-class rule */

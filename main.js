@@ -4,8 +4,29 @@ import { showReplay } from 'replay-player';
 window.addEventListener('load', () => {
     const canvas = document.getElementById('game-canvas');
     
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const setCanvasSize = () => {
+        const targetAspectRatio = 9 / 16; // Portrait aspect ratio
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const windowAspectRatio = windowWidth / windowHeight;
+        
+        let canvasWidth, canvasHeight;
+        
+        if (windowAspectRatio > targetAspectRatio) {
+            // Window is wider than target - constrain by height
+            canvasHeight = windowHeight;
+            canvasWidth = canvasHeight * targetAspectRatio;
+        } else {
+            // Window is taller than target - constrain by width
+            canvasWidth = windowWidth;
+            canvasHeight = canvasWidth / targetAspectRatio;
+        }
+        
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+    };
+    
+    setCanvasSize();
 
     let game;
     let replayRoot = null;
@@ -25,10 +46,14 @@ window.addEventListener('load', () => {
         gameOverScreen.style.display = 'none';
         uiContainer.style.display = 'flex';
         powerupTimerEl.style.display = 'none';
+        
+        // Ensure any existing replay player is unmounted before starting
+        if (replayRoot) {
+            replayRoot.unmount();
+            replayRoot = null;
+        }
 
-        // Fix: Explicitly update canvas dimensions on restart
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        setCanvasSize();
 
         updateScore(0);
         updateBombCount(1); // Starting bombs
@@ -107,6 +132,7 @@ window.addEventListener('load', () => {
         // When the game restarts, we must abort the old listeners to prevent memory leaks
         const cleanupListeners = () => {
             controller.abort();
+            // No need to unmount here, it's handled at the start of startGame
             restartButton.removeEventListener('click', cleanupListeners);
         };
         restartButton.addEventListener('click', cleanupListeners);
@@ -142,8 +168,7 @@ window.addEventListener('load', () => {
     restartButton.addEventListener('click', startGame);
 
     window.addEventListener('resize', () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        setCanvasSize();
         if (game) {
             game.resize(canvas.width, canvas.height);
         }

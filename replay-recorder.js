@@ -17,6 +17,7 @@ export default class ReplayRecorder {
         this.frames = [];
         this.events = [];
         this.startTime = Date.now();
+        this.maxReplayDuration = 30 * 1000; // 30 seconds in milliseconds
     }
 
     recordFrame() {
@@ -75,7 +76,15 @@ export default class ReplayRecorder {
 
         this.frames.push(frame);
 
-        // No longer limiting duration, so the full replay is available.
+        // Prune old frames to keep the array size manageable and limit replay duration
+        const cutoffTime = currentTime - this.maxReplayDuration;
+        // Find the index of the first frame that is within our replay duration
+        const firstValidIndex = this.frames.findIndex(f => f.time >= cutoffTime);
+
+        // If we found old frames (firstValidIndex > 0), remove them.
+        if (firstValidIndex > 0) {
+            this.frames.splice(0, firstValidIndex);
+        }
     }
 
     recordEvent(type, data) {
@@ -88,6 +97,12 @@ export default class ReplayRecorder {
     }
 
     async getReplayData() {
+        // Prune events to match the timeframe of the recorded frames
+        if (this.frames.length > 0) {
+            const replayStartTime = this.frames[0].time;
+            this.events = this.events.filter(e => e.time >= replayStartTime);
+        }
+
         // Compress the frames data
         const framesString = JSON.stringify(this.frames);
         const compressedFrames = fflate.compressSync(fflate.strToU8(framesString));
@@ -155,7 +170,6 @@ export default class ReplayRecorder {
                     baseHeight: this.game.width * 0.08,
                 }
             },
-            frames: this.frames,
             events: this.events,
             width: this.game.width,
             height: this.game.height,
