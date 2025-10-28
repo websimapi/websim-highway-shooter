@@ -46,6 +46,15 @@ export default class PowerUp {
         // handled by three.js
     }
 
+    resize(oldGameWidth, oldGameHeight) {
+        if (oldGameWidth <= 0 || oldGameHeight <= 0) return;
+        const xRatio = (this.x + this.width / 2) / oldGameWidth;
+        const yRatio = (this.y + this.height / 2) / oldGameHeight;
+        
+        this.x = (this.game.width * xRatio) - this.width / 2;
+        this.y = (this.game.height * yRatio) - this.height / 2;
+    }
+
     destroy() {
         if (this.mesh) {
             this.game.scene.remove(this.mesh);

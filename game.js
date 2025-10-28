@@ -119,6 +119,7 @@ export default class Game {
             
             this.assetsLoaded = true;
             this.player.onAssetsLoaded();
+            this.resizeBackground(); // Set initial background size
         };
     }
 
@@ -133,8 +134,11 @@ export default class Game {
         const marker2 = new THREE.Mesh(laneMarkerGeo, laneMarkerMat);
         marker2.position.x = laneWidth / 2;
 
-        this.scene.add(marker1);
-        this.scene.add(marker2);
+        this.laneMarker1 = marker1;
+        this.laneMarker2 = marker2;
+
+        this.scene.add(this.laneMarker1);
+        this.scene.add(this.laneMarker2);
     }
 
     update(deltaTime) {
@@ -221,12 +225,46 @@ export default class Game {
         this.barriers.forEach(checkAndDestroy);
         this.enemies.forEach(checkAndDestroy);
         this.onScoreUpdate(this.score);
+
+        // Also add a visual explosion effect
+        this.bombEffects.push(new BombExplosionEffect(this, playerX, playerY));
     }
     
-    resize(width, height) {
+    resizeBackground() {
+        if (!this.laneMarker1 || !this.laneMarker2) return;
+        
+        // This is a more robust way to handle the background for Three.js
+        this.laneMarker1.geometry.dispose();
+        this.laneMarker2.geometry.dispose();
+        this.laneMarker1.geometry = new THREE.PlaneGeometry(4, this.height);
+        this.laneMarker2.geometry = new THREE.PlaneGeometry(4, this.height);
+
+        this.laneMarker1.position.x = -this.width / 6;
+        this.laneMarker2.position.x = this.width / 6;
+    }
+    
+    resize(width, height, oldWidth, oldHeight) {
         this.width = width;
         this.height = height;
-        this.player.resize();
+        this.input.resize(oldWidth);
+
+        // Resize all game objects
+        this.player.resize(oldWidth, oldHeight);
+        
+        const resizeObjects = (arr) => arr.forEach(obj => {
+            if (obj.resize) obj.resize(oldWidth, oldHeight);
+        });
+        resizeObjects(this.barrels);
+        resizeObjects(this.barriers);
+        resizeObjects(this.enemies);
+        resizeObjects(this.powerups);
+        resizeObjects(this.projectiles);
+        
+        // The spawner doesn't hold objects, but its internal logic might depend on screen size in the future.
+        // For now it seems okay without a resize method.
+        // this.spawner.resize(oldWidth, oldHeight);
+
+        this.resizeBackground();
 
         this.camera.aspect = width / height;
         const fov = 2 * Math.atan((height / 2) / 1000) * (180 / Math.PI);

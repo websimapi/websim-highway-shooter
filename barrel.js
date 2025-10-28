@@ -134,6 +134,28 @@ export default class Barrel {
         // This is now handled by the main Three.js render loop in game.js
     }
     
+    resize(oldGameWidth, oldGameHeight) {
+        const yRatio = oldGameHeight > 0 ? (this.y + this.height / 2) / oldGameHeight : 0;
+
+        const laneWidth = this.game.width / 3;
+        const subLaneWidth = laneWidth / 3;
+
+        const oldWidth = this.width;
+        this.width = subLaneWidth * 0.85;
+        this.height = this.width;
+
+        const laneStartX = this.lane * laneWidth;
+        this.x = laneStartX + (this.subLane * subLaneWidth) + (subLaneWidth / 2) - (this.width / 2);
+        this.y = (this.game.height * yRatio) - (this.height / 2);
+
+        // Re-scale the mesh
+        if (oldWidth > 0) {
+            const scaleFactor = this.width / oldWidth;
+            this.mesh.scale.multiplyScalar(scaleFactor);
+            this.textMesh.scale.multiplyScalar(scaleFactor);
+        }
+    }
+
     updateHealthText() {
         const ctx = this.textContext;
         ctx.clearRect(0, 0, this.textCanvas.width, this.textCanvas.height);

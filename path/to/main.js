@@ -2,8 +2,8 @@ import Game from 'game';
 import { showReplay } from 'replay-player';
 
 window.addEventListener('load', () => {
-    const canvas = document.getElementById('game-canvas');
-    
+    const canvas = document.getElementById('game-canvas');  
+
     const setCanvasSize = () => {
         const targetAspectRatio = 9 / 16; // Portrait aspect ratio
         const windowWidth = window.innerWidth;
@@ -29,16 +29,11 @@ window.addEventListener('load', () => {
     let game;
 
     const handleResize = () => {
-        // The core issue is that `game.width` and `canvas.width` could be out of sync
-        // during a resize event. We must capture the state *before* any changes.
-        const oldWidth = game ? game.width : canvas.width;
-        const oldHeight = game ? game.height : canvas.height;
-
         setCanvasSize(); 
-        
         if (game) {
-            // Pass the captured old dimensions to the game's resize handler.
-            game.resize(canvas.width, canvas.height, oldWidth, oldHeight);
+            const oldWidth = game.width;
+            game.resize(canvas.width, canvas.height);
+            game.input.resize(oldWidth);
         }
     };
     
@@ -121,8 +116,8 @@ window.addEventListener('load', () => {
         watchReplayButton.disabled = true;
         watchReplayButton.textContent = 'Preparing Replay...';
 
-        const replayData = await game.recorder.getReplayData();
-        
+        const replayData = await game.recorder.getReplayData(); 
+
         watchReplayButton.disabled = false;
         watchReplayButton.textContent = 'Watch Instant Replay';
 

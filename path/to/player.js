@@ -6,7 +6,7 @@ export default class Player {
         this.game = game;
         this.resize();
         this.speed = 0.5; // pixels per ms
-        
+
         // These are used for collision detection, not rendering.
         // this.image is now a getter
         this.motorcycleImage = this.game.assets.playerImage;
@@ -15,12 +15,12 @@ export default class Player {
         this.baseShootCooldown = 200; // ms
         this.shootCooldown = this.baseShootCooldown;
         this.shootTimer = 0;
-        
+
         // Power-up state
         this.isRapidFireActive = false;
         this.rapidFireTimer = 0;
         this.rapidFireDuration = 5000; // 5 seconds
-        
+
         this.bombCount = 1;
         this.maxBombs = 3;
 
@@ -97,7 +97,7 @@ export default class Player {
         // Smooth movement towards targetX
         const dx = targetX - (this.x + this.width / 2);
         const moveDistance = this.speed * deltaTime;
-        
+
         // Determine target rotation based on movement direction
         let targetRotation = 0;
         const deadZone = 1; // pixels, to prevent jittering
@@ -131,7 +131,7 @@ export default class Player {
         } else {
             this.shootTimer += deltaTime;
         }
-        
+
         // Update power-ups
         if (this.isRapidFireActive) {
             this.rapidFireTimer -= deltaTime;

@@ -81,6 +81,25 @@ export default class Barrier {
         // Drawing is now handled by Three.js main loop
     }
 
+    resize(oldGameWidth, oldGameHeight) {
+        const yRatio = oldGameHeight > 0 ? (this.y + this.height / 2) / oldGameHeight : 0;
+
+        const laneWidth = this.game.width / 3;
+        this.width = laneWidth;
+        this.height = this.width / 5;
+        
+        this.x = this.lane * laneWidth;
+        this.y = (this.game.height * yRatio) - (this.height / 2);
+
+        // Re-create geometry with new dimensions
+        if (this.mesh) {
+            this.mesh.geometry.dispose();
+            this.mesh.geometry = new THREE.PlaneGeometry(this.width, this.height);
+            this.textMesh.geometry.dispose();
+            this.textMesh.geometry = new THREE.PlaneGeometry(this.height * 1.5, this.height * 0.75);
+        }
+    }
+
     updateHealthText() {
         const ctx = this.textContext;
         ctx.clearRect(0, 0, this.textCanvas.width, this.textCanvas.height);

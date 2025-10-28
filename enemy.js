@@ -126,13 +126,54 @@ export default class Enemy {
         // Now handled by Three.js render loop
     }
 
+    resize(oldGameWidth, oldGameHeight) {
+        if (oldGameWidth <= 0 || oldGameHeight <= 0) return;
+
+        const xRatio = (this.x + this.width / 2) / oldGameWidth;
+        const yRatio = (this.y + this.height / 2) / oldGameHeight;
+
+        const oldBaseWidth = this.baseWidth;
+
+        this.baseWidth = this.game.width * 0.08;
+        if (this.type === 'red') {
+            this.baseWidth *= 1.2;
+        }
+        this.baseHeight = this.baseWidth;
+
+        // The current width/height is based on scale, so we update the base and let update() handle the current size
+        const currentScale = this.width / oldBaseWidth;
+        this.width = this.baseWidth * currentScale;
+        this.height = this.baseHeight * currentScale;
+        
+        this.x = (this.game.width * xRatio) - this.width / 2;
+        this.y = (this.game.height * yRatio) - this.height / 2;
+
+        // We don't need to rescale the mesh directly since its scale is set in the update loop based on animation.
+        // We only need to update the health bar geometry.
+        if(this.healthBarMesh) {
+            this.healthBarMesh.geometry.dispose();
+            this.healthBarMesh.geometry = new THREE.PlaneGeometry(this.baseWidth, 5);
+        }
+        if(this.healthBarBgMesh) {
+            this.healthBarBgMesh.geometry.dispose();
+            this.healthBarBgMesh.geometry = new THREE.PlaneGeometry(this.baseWidth, 5);
+        }
+
+        // Recalculate health bar visual state
+        if (this.health < this.maxHealth) {
+             const healthRatio = Math.max(0, this.health / this.maxHealth);
+             this.healthBarMesh.scale.x = healthRatio;
+             this.healthBarMesh.position.x = -(this.baseWidth * (1 - healthRatio)) / 2;
+        }
+    }
+
     hit() {
         this.health--;
         if (this.health < this.maxHealth) {
             this.healthBarContainer.visible = true;
-            const healthRatio = this.health / this.maxHealth;
+            const healthRatio = Math.max(0, this.health / this.maxHealth);
             this.healthBarMesh.scale.x = healthRatio;
-            this.healthBarMesh.position.x = -(this.width * (1 - healthRatio)) / 2;
+            this.healthBarMesh.position.x = -(this.baseWidth * (1 - healthRatio)) / 2;
         }
         if (this.health <= 0) {
             this.active = false;
